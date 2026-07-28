@@ -16,10 +16,14 @@ from datetime import date
 import socket
 socket.setdefaulttimeout(10.0)
 
+from rich.console import Console
+from rich.table import Table
+
 from sequoia_x.core.config import get_settings
 from sequoia_x.core.logger import get_logger
 from sequoia_x.data.engine import DataEngine
 from sequoia_x.notify.feishu import FeishuNotifier
+from sequoia_x.prediction import EnsemblePredictor
 from sequoia_x.strategy.base import BaseStrategy
 from sequoia_x.strategy.high_tight_flag import HighTightFlagStrategy
 from sequoia_x.strategy.limit_up_shakeout import LimitUpShakeoutStrategy
@@ -46,17 +50,80 @@ def _sync_latest(engine: DataEngine, force: bool, logger) -> None:
     logger.info(f"快照同步完成，写入 {count} 只股票")
 
 
+def _run_prediction(engine: DataEngine, settings, symbols: list[str], horizon: int) -> None:
+    """训练集成模型并输出指定股票的涨跌概率。"""
+    normalized = []
+    for item in symbols:
+        normalized.extend(part.strip() for part in item.split(",") if part.strip())
+
+    predictor = EnsemblePredictor(engine)
+    results, metrics = predictor.predict(normalized, horizon=horizon)
+
+    console = Console()
+    console.print(
+        f"时间外验证：AUC={metrics['roc_auc']:.3f} | "
+        f"准确率={metrics['accuracy']:.3f} | "
+        f"平衡准确率={metrics['balanced_accuracy']:.3f} | "
+        f"基准准确率={metrics['baseline_accuracy']:.3f} | "
+        f"Brier={metrics['brier_score']:.3f}"
+    )
+    console.print(
+        f"高置信度样本（≤40%或≥60%）：覆盖率={metrics['high_confidence_coverage']:.1%} | "
+        f"准确率={metrics['high_confidence_accuracy']:.3f}"
+    )
+    console.print(
+        f"验证起始日：{metrics['validation_start']} | "
+        f"训练样本：{int(metrics['train_rows'])} | "
+        f"校准样本：{int(metrics['calibration_rows'])} | "
+        f"验证样本：{int(metrics['validation_rows'])}"
+    )
+
+    table = Table(title=f"未来 {horizon} 个交易日涨跌概率预测")
+    table.add_column("代码")
+    table.add_column("数据日期")
+    table.add_column("方向")
+    table.add_column("上涨概率", justify="right")
+    table.add_column("同概率组历史均值", justify="right")
+    for result in results:
+        table.add_row(
+            result.symbol,
+            result.data_date,
+            result.direction,
+            f"{result.up_probability:.1%}",
+            f"{result.expected_return:.2%}",
+        )
+    console.print(table)
+    console.print("提示：这是统计概率而非收益保证；样本外指标低于基准时不应据此交易。")
+
+    notifier = FeishuNotifier(settings)
+    stock_names = engine.get_stock_names([result.symbol for result in results])
+    notifier.send_prediction(results, metrics, stock_names=stock_names)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Sequoia-X V2 选股系统")
-    parser.add_argument(
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument(
         "--backfill",
         action="store_true",
         help="回填模式：通过 baostock 拉取全市场历史 K 线（约12分钟）",
+    )
+    mode_group.add_argument(
+        "--predict",
+        nargs="+",
+        metavar="SYMBOL",
+        help="预测指定股票，可用空格或逗号分隔，例如 --predict 600519 000001",
     )
     parser.add_argument(
         "--force",
         action="store_true",
         help="增量同步失败时，使用本地陈旧数据继续执行策略并推送",
+    )
+    parser.add_argument(
+        "--horizon",
+        type=int,
+        default=5,
+        help="预测未来交易日数量，范围 1-60，默认 5",
     )
     args = parser.parse_args()
 
@@ -77,6 +144,10 @@ def main() -> None:
             all_symbols = engine.get_all_symbols()
             engine.backfill(all_symbols)
             logger.info("Sequoia-X V2 回填模式运行完成")
+            return
+
+        if args.predict:
+            _run_prediction(engine, settings, symbols=args.predict, horizon=args.horizon)
             return
 
         # ── 日常模式：单次 API 补今天 + 策略 + 推送 ──
@@ -106,11 +177,13 @@ def main() -> None:
             logger.info(f"{strategy_name} 选出 {len(selected)} 只股票")
 
             if selected:
+                stock_names = engine.get_stock_names(selected)
                 notifier.send(
                     symbols=selected,
                     strategy_name=strategy_name,
                     webhook_key=strategy.webhook_key,
                     data_date=data_date,
+                    stock_names=stock_names,
                 )
             else:
                 logger.info(f"{strategy_name} 无选股结果，跳过推送")

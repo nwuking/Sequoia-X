@@ -17,13 +17,21 @@ Sequoia-X V2 是面向 A 股市场的量化选股系统，基于现代 Python �
 ## 运行模式
 
 ```bash
-python main.py                # 日常模式：4进程增量补数据 + 跑策略 + 飞书推送
-python main.py --force        # 同步失败时使用本地陈旧数据继续选股并推送
-python main.py --backfill     # 回填模式：全市场历史K线一次性灌入（约12分钟）
+.venv/bin/python main.py                # 日常模式：4进程增量补数据 + 跑策略 + 飞书推送
+.venv/bin/python main.py --force        # 同步失败时使用本地陈旧数据继续选股并推送
+.venv/bin/python main.py --backfill     # 回填模式：全市场历史K线一次性灌入（约12分钟）
+.venv/bin/python main.py --predict 600519 000001 --horizon 5  # 指定股票预测未来5个交易日
 ```
 
 默认情况下，增量同步失败会终止程序，避免使用陈旧或不完整的数据推送。
 只有明确指定 `--force` 时，程序才会在同步失败后继续使用本地已有数据。
+
+预测模式完全使用本地历史行情，不执行增量同步，并将结果推送至飞书。模型采用线性逻辑回归与
+非线性梯度提升等权集成，并显示严格按时间切分的样本外 AUC、准确率、基准准确率和
+Brier 分数。预测结果是统计概率，不构成收益保证或投资建议。
+
+可选配置 `STRATEGY_WEBHOOK_PREDICTION` 使用独立的预测机器人；未配置时回退到默认
+`FEISHU_WEBHOOK_URL`。
 
 ---
 

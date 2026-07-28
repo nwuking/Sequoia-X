@@ -30,6 +30,14 @@ _CREATE_INDEX_SQL = """
 CREATE INDEX IF NOT EXISTS idx_symbol_date ON stock_daily (symbol, date);
 """
 
+_CREATE_STOCK_BASIC_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS stock_basic (
+    symbol     TEXT PRIMARY KEY,
+    name       TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+"""
+
 
 def _bs_fetch_batch(tasks: list) -> tuple[bool, list]:
     """多进程 worker：独立 login，批量拉取 baostock 数据。"""
@@ -104,6 +112,7 @@ class DataEngine:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(_CREATE_TABLE_SQL)
             conn.execute(_CREATE_INDEX_SQL)
+            conn.execute(_CREATE_STOCK_BASIC_TABLE_SQL)
             conn.commit()
         logger.info(f"数据库初始化完成：{self.db_path}")
 
@@ -120,6 +129,23 @@ class DataEngine:
         with sqlite3.connect(self.db_path) as conn:
             row = conn.execute("SELECT MAX(date) FROM stock_daily").fetchone()
         return row[0] if row and row[0] else None
+
+    def get_stock_names(self, symbols: list[str]) -> dict[str, str]:
+        """从本地基础信息表查询股票中文名。"""
+        if not symbols:
+            return {}
+
+        mapping: dict[str, str] = {}
+        with sqlite3.connect(self.db_path) as conn:
+            for start in range(0, len(symbols), 900):
+                batch = symbols[start:start + 900]
+                placeholders = ",".join("?" for _ in batch)
+                rows = conn.execute(
+                    f"SELECT symbol, name FROM stock_basic WHERE symbol IN ({placeholders})",
+                    batch,
+                ).fetchall()
+                mapping.update(rows)
+        return mapping
 
     def get_ohlcv(self, symbol: str) -> pd.DataFrame:
         with sqlite3.connect(self.db_path) as conn:
@@ -351,7 +377,9 @@ class DataEngine:
     # ── 股票列表 ──
 
     def get_all_symbols(self) -> list[str]:
-        """通过 baostock 获取全市场 A 股代码列表。"""
+        """通过 baostock 获取全市场 A 股代码及中文名，并保存到本地。"""
+        from datetime import date
+
         import baostock as bs
 
         lg = bs.login()
@@ -362,13 +390,26 @@ class DataEngine:
         try:
             rs = bs.query_stock_basic(code_name="", code="")
             symbols = []
+            stock_basics = []
             while rs.next():
                 row = rs.get_row_data()
                 code = row[0]           # "sh.600000" or "sz.000001"
+                name = row[1]
                 status = row[4]         # "1" = 上市
                 stock_type = row[5]     # "1" = 股票
                 if status == "1" and stock_type == "1":
-                    symbols.append(code.split(".")[1])  # 提取纯数字代码
+                    symbol = code.split(".")[1]  # 提取纯数字代码
+                    symbols.append(symbol)
+                    stock_basics.append((symbol, name, date.today().isoformat()))
+
+            with sqlite3.connect(self.db_path) as conn:
+                conn.executemany(
+                    "INSERT INTO stock_basic (symbol, name, updated_at) VALUES (?, ?, ?) "
+                    "ON CONFLICT(symbol) DO UPDATE SET "
+                    "name=excluded.name, updated_at=excluded.updated_at",
+                    stock_basics,
+                )
+                conn.commit()
             logger.info(f"获取股票列表完成，共 {len(symbols)} 只")
             return symbols
         except Exception as e:

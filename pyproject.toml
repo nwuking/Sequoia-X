@@ -10,6 +10,7 @@ dependencies = [
     "rich>=13.0",
     "pandas>=2.0",
     "requests>=2.31",
+    "scikit-learn>=1.6",
 ]
 
 [project.optional-dependencies]

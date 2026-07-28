@@ -106,3 +106,22 @@ def test_get_latest_date() -> None:
             )
 
         assert engine.get_latest_date() == "2026-07-27"
+
+
+def test_get_stock_names_from_local_database() -> None:
+    """股票中文名应直接从本地基础信息表读取。"""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        engine, _ = make_engine_in(tmp_dir)
+        with sqlite3.connect(engine.db_path) as conn:
+            conn.executemany(
+                "INSERT INTO stock_basic (symbol, name, updated_at) VALUES (?, ?, ?)",
+                [
+                    ("600519", "贵州茅台", "2026-07-28"),
+                    ("000001", "平安银行", "2026-07-28"),
+                ],
+            )
+
+        assert engine.get_stock_names(["600519", "000001", "999999"]) == {
+            "600519": "贵州茅台",
+            "000001": "平安银行",
+        }

@@ -37,30 +37,16 @@ class FeishuNotifier:
             return f"BJ{code}"
         return f"SZ{code}"
 
-    @staticmethod
-    def _get_stock_names(symbols: list[str]) -> dict[str, str]:
-        """通过 baostock 批量查询股票名称，返回 {code: name} 映射。"""
-        import baostock as bs
-        bs.login()
-        mapping = {}
-        for code in symbols:
-            prefix = "sh" if code.startswith(("6", "9")) else "sz"
-            rs = bs.query_stock_basic(code=f"{prefix}.{code}")
-            while rs.next():
-                row = rs.get_row_data()
-                mapping[code] = row[1]  # 第2个字段是股票名称
-        bs.logout()
-        return mapping
-
     def _build_card(
         self,
         symbols: list[str],
         strategy_name: str,
         data_date: str | None = None,
+        stock_names: dict[str, str] | None = None,
     ) -> dict:
         today = date.today().strftime("%Y-%m-%d")
         data_date_text = data_date or "未知"
-        names = self._get_stock_names(symbols)
+        names = stock_names or {}
 
         links: list[str] = []
         for code in symbols:
@@ -105,12 +91,105 @@ class FeishuNotifier:
             },
         }
 
+    def _build_prediction_card(
+        self,
+        results: list,
+        metrics: dict[str, float],
+        stock_names: dict[str, str] | None = None,
+    ) -> dict:
+        """构建指定股票涨跌概率预测卡片。"""
+        names = stock_names or {}
+        horizon = results[0].horizon if results else 0
+        data_date = results[0].data_date if results else "未知"
+
+        rows = []
+        for result in results[:50]:
+            xq_code = self._to_xueqiu_code(result.symbol)
+            name = names.get(result.symbol, xq_code)
+            rows.append(
+                f"[{name} {result.symbol}](https://xueqiu.com/S/{xq_code})｜"
+                f"**{result.direction}**｜上涨概率 {result.up_probability:.1%}｜"
+                f"同概率组历史均值 {result.expected_return:.2%}"
+            )
+        if len(results) > 50:
+            rows.append(f"其余 {len(results) - 50} 只股票因消息长度限制未展示")
+
+        return {
+            "msg_type": "interactive",
+            "card": {
+                "header": {
+                    "title": {
+                        "tag": "plain_text",
+                        "content": f"🔮 Sequoia-X 股票预测 | 未来 {horizon} 个交易日",
+                    },
+                    "template": "purple",
+                },
+                "elements": [
+                    {
+                        "tag": "div",
+                        "text": {
+                            "tag": "lark_md",
+                            "content": (
+                                f"**数据日期：** {data_date}\n"
+                                f"**预测数量：** {len(results)}\n"
+                                f"**时间外 AUC：** {metrics['roc_auc']:.3f}\n"
+                                f"**准确率：** {metrics['accuracy']:.3f} "
+                                f"（基准 {metrics['baseline_accuracy']:.3f}）\n"
+                                f"**高置信度准确率：** "
+                                f"{metrics['high_confidence_accuracy']:.3f}\n"
+                                f"**Brier：** {metrics['brier_score']:.3f}"
+                            ),
+                        },
+                    },
+                    {"tag": "hr"},
+                    {
+                        "tag": "div",
+                        "text": {
+                            "tag": "lark_md",
+                            "content": "\n".join(rows),
+                        },
+                    },
+                    {
+                        "tag": "note",
+                        "elements": [
+                            {
+                                "tag": "plain_text",
+                                "content": "统计概率不代表收益保证，不构成投资建议。",
+                            }
+                        ],
+                    },
+                ],
+            },
+        }
+
+    def _post_payload(self, payload: dict, webhook_key: str, success_message: str) -> None:
+        """发送飞书卡片并统一处理响应。"""
+        url = self.settings.get_webhook_url(webhook_key)
+        try:
+            resp = requests.post(
+                url,
+                data=json.dumps(payload),
+                headers={"Content-Type": "application/json"},
+                timeout=10,
+            )
+            resp_json = resp.json()
+            if resp.status_code != 200 or resp_json.get("code") != 0:
+                logger.error(
+                    f"飞书推送失败 [{webhook_key}] "
+                    f"HTTP状态={resp.status_code} 飞书响应={resp.text}"
+                )
+            else:
+                logger.info(success_message)
+        except requests.RequestException as exc:
+            logger.error(f"飞书推送请求异常 [{webhook_key}]：{exc}")
+
     def send(
         self,
         symbols: list[str],
         strategy_name: str,
         webhook_key: str = "default",
         data_date: str | None = None,
+        stock_names: dict[str, str] | None = None,
     ) -> None:
         """
         将选股结果格式化为飞书卡片消息并 POST 至对应 Webhook。
@@ -123,31 +202,38 @@ class FeishuNotifier:
             strategy_name: 策略名称，用于卡片标题。
             webhook_key: 策略标识，用于路由到对应飞书机器人。
             data_date: 本地行情库中的最新交易日期。
+            stock_names: 从本地数据库读取的股票代码到中文名映射。
 
         Raises:
             不抛出异常，HTTP 失败时记录 ERROR 日志。
         """
-        url = self.settings.get_webhook_url(webhook_key)
-        payload = self._build_card(symbols, strategy_name, data_date=data_date)
+        payload = self._build_card(
+            symbols,
+            strategy_name,
+            data_date=data_date,
+            stock_names=stock_names,
+        )
 
-        try:
-            resp = requests.post(
-                url,
-                data=json.dumps(payload),
-                headers={"Content-Type": "application/json"},
-                timeout=10,
-            )
-            # 解析飞书真正的返回体
-            resp_json = resp.json()
+        self._post_payload(
+            payload,
+            webhook_key,
+            f"飞书推送成功 [{webhook_key}]，共 {len(symbols)} 只股票",
+        )
 
-            # 飞书真正的成功标志是内部的 code == 0
-            if resp.status_code != 200 or resp_json.get("code") != 0:
-                logger.error(
-                    f"飞书推送失败 [{webhook_key}] "
-                    f"HTTP状态={resp.status_code} 飞书响应={resp.text}"
-                )
-            else:
-                logger.info(f"飞书推送成功 [{webhook_key}]，共 {len(symbols)} 只股票")
-
-        except requests.RequestException as exc:
-            logger.error(f"飞书推送请求异常 [{webhook_key}]：{exc}")
+    def send_prediction(
+        self,
+        results: list,
+        metrics: dict[str, float],
+        stock_names: dict[str, str] | None = None,
+        webhook_key: str = "prediction",
+    ) -> None:
+        """将指定股票的概率预测结果推送至飞书。"""
+        if not results:
+            logger.info("无有效预测结果，跳过飞书推送")
+            return
+        payload = self._build_prediction_card(results, metrics, stock_names=stock_names)
+        self._post_payload(
+            payload,
+            webhook_key,
+            f"预测结果飞书推送成功 [{webhook_key}]，共 {len(results)} 只股票",
+        )
