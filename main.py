@@ -16,6 +16,7 @@ from datetime import date
 import socket
 socket.setdefaulttimeout(10.0)
 
+import pandas as pd
 from rich.console import Console
 from rich.table import Table
 
@@ -23,6 +24,7 @@ from sequoia_x.core.config import get_settings
 from sequoia_x.core.logger import get_logger
 from sequoia_x.data.engine import DataEngine
 from sequoia_x.notify.feishu import FeishuNotifier
+from sequoia_x.portfolio import PortfolioAdvisor, PortfolioManager
 from sequoia_x.prediction import EnsemblePredictor
 from sequoia_x.strategy.base import BaseStrategy
 from sequoia_x.strategy.high_tight_flag import HighTightFlagStrategy
@@ -100,6 +102,55 @@ def _run_prediction(engine: DataEngine, settings, symbols: list[str], horizon: i
     notifier.send_prediction(results, metrics, stock_names=stock_names)
 
 
+def _run_portfolio(
+    engine: DataEngine,
+    settings,
+    watchlist: list[str] | None = None,
+    positions: list[str] | None = None,
+    remove_positions: list[str] | None = None,
+) -> None:
+    """更新本地组合、刷新收益并推送持仓与下一工作日建议。"""
+    manager = PortfolioManager(engine, settings.portfolio_csv_path)
+    if watchlist:
+        manager.set_watchlist(watchlist)
+    if positions:
+        manager.upsert_positions([manager.parse_position(value) for value in positions])
+    if remove_positions:
+        manager.remove_positions(remove_positions)
+
+    portfolio, _ = manager.refresh()
+    if portfolio.empty:
+        get_logger(__name__).warning("组合为空，请先通过 --set-watchlist 或 --set-position 添加")
+        return
+
+    console = Console()
+    table = Table(title="自选与持仓")
+    table.add_column("名称")
+    table.add_column("代码")
+    for column in ("股数", "最新收盘", "收益率", "浮动盈亏"):
+        table.add_column(column, justify="right")
+    for _, row in portfolio.iterrows():
+        shares_value = row["shares"]
+        shares = int(float(shares_value)) if str(shares_value) not in ("nan", "<NA>") else 0
+        close_value = pd.to_numeric(pd.Series([row["latest_close"]]), errors="coerce").iloc[0]
+        has_quote = pd.notna(close_value)
+        table.add_row(
+            str(row["name"]),
+            row["symbol"],
+            str(shares),
+            f"{float(close_value):.3f}" if has_quote else "-",
+            f"{float(row['return_rate']):+.2%}" if shares > 0 and has_quote else "-",
+            f"{float(row['unrealized_pnl']):+,.2f}" if shares > 0 and has_quote else "-",
+        )
+    console.print(table)
+    console.print(f"CSV：{settings.portfolio_csv_path}")
+
+    advice = PortfolioAdvisor(engine).advise(portfolio)
+    notifier = FeishuNotifier(settings)
+    notifier.send_portfolio(portfolio)
+    notifier.send_portfolio_advice(advice)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Sequoia-X V2 选股系统")
     mode_group = parser.add_mutually_exclusive_group()
@@ -114,6 +165,11 @@ def main() -> None:
         metavar="SYMBOL",
         help="预测指定股票，可用空格或逗号分隔，例如 --predict 600519 000001",
     )
+    mode_group.add_argument(
+        "--portfolio",
+        action="store_true",
+        help="刷新本地自选与持仓，计算收益并推送飞书操作建议",
+    )
     parser.add_argument(
         "--force",
         action="store_true",
@@ -124,6 +180,24 @@ def main() -> None:
         type=int,
         default=5,
         help="预测未来交易日数量，范围 1-60，默认 5",
+    )
+    parser.add_argument(
+        "--set-watchlist",
+        nargs="+",
+        metavar="STOCK",
+        help="覆盖自选列表，支持股票代码或中文名",
+    )
+    parser.add_argument(
+        "--set-position",
+        action="append",
+        metavar="股票:股数:成本[:买入均价]",
+        help="新增或更新持仓，可重复指定",
+    )
+    parser.add_argument(
+        "--remove-position",
+        action="append",
+        metavar="STOCK",
+        help="清空指定股票持仓但保留在自选中，可重复指定",
     )
     args = parser.parse_args()
 
@@ -148,9 +222,23 @@ def main() -> None:
 
         if args.predict:
             _run_prediction(engine, settings, symbols=args.predict, horizon=args.horizon)
+            _run_portfolio(engine, settings)
             return
 
-        # ── 日常模式：单次 API 补今天 + 策略 + 推送 ──
+        if args.portfolio or args.set_watchlist or args.set_position or args.remove_position:
+            _run_portfolio(
+                engine,
+                settings,
+                watchlist=args.set_watchlist,
+                positions=args.set_position,
+                remove_positions=args.remove_position,
+            )
+            return
+
+        # ── 日常模式：持仓使用独立不复权报价，先更新以免行情同步失败时漏推 ──
+        _run_portfolio(engine, settings)
+
+        # ── 单次 API 补今天 + 策略 + 推送 ──
         _sync_latest(engine, force=args.force, logger=logger)
 
         # 4. 策略列表（新增策略在此追加即可）

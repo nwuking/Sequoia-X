@@ -5,6 +5,7 @@ import logging
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+import pandas as pd
 from hypothesis import given, settings as h_settings
 from hypothesis import strategies as st
 
@@ -123,6 +124,41 @@ def test_prediction_notification_contains_probability_and_metrics() -> None:
     assert "67.3%" in card_text
     assert "AUC" in card_text
     assert "0.609" in card_text
+
+
+def test_portfolio_notification_contains_return_and_advice() -> None:
+    """持仓卡片和操作建议卡片应包含收益及风险提示。"""
+    notifier = FeishuNotifier(make_settings())
+    portfolio = pd.DataFrame(
+        [
+            {
+                "symbol": "000783", "name": "长江证券", "shares": 6000,
+                "latest_close": 10.0, "data_date": "2026-07-27",
+                "return_rate": 0.0353, "market_value": 60000,
+                "unrealized_pnl": 2046,
+            }
+        ]
+    )
+    advice = [
+        SimpleNamespace(
+            symbol="000783", name="长江证券", action="继续持有，20日线防守",
+            risk="低", reason="均线多头排列", reference_price=10.0,
+            next_workday="2026-07-29",
+        )
+    ]
+
+    with patch("requests.post") as mock_post:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=MagicMock(return_value={"code": 0}),
+        )
+        notifier.send_portfolio(portfolio)
+        notifier.send_portfolio_advice(advice)
+
+    first_body = json.loads(mock_post.call_args_list[0].kwargs["data"])
+    second_body = json.loads(mock_post.call_args_list[1].kwargs["data"])
+    assert "3.53%" in json.dumps(first_body, ensure_ascii=False)
+    assert "20日线防守" in json.dumps(second_body, ensure_ascii=False)
 
 
 # Feature: sequoia-x-v2, Property 11: 飞书通知使用 ConfigManager 中的 Webhook URL

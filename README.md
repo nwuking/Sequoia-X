@@ -21,6 +21,7 @@ Sequoia-X V2 是面向 A 股市场的量化选股系统，基于现代 Python �
 .venv/bin/python main.py --force        # 同步失败时使用本地陈旧数据继续选股并推送
 .venv/bin/python main.py --backfill     # 回填模式：全市场历史K线一次性灌入（约12分钟）
 .venv/bin/python main.py --predict 600519 000001 --horizon 5  # 指定股票预测未来5个交易日
+.venv/bin/python main.py --portfolio    # 刷新持仓收益并推送下一工作日操作观察
 ```
 
 默认情况下，增量同步失败会终止程序，避免使用陈旧或不完整的数据推送。
@@ -32,6 +33,26 @@ Brier 分数。预测结果是统计概率，不构成收益保证或投资建�
 
 可选配置 `STRATEGY_WEBHOOK_PREDICTION` 使用独立的预测机器人；未配置时回退到默认
 `FEISHU_WEBHOOK_URL`。
+
+### 自选与持仓
+
+```bash
+# 覆盖自选列表
+.venv/bin/python main.py --portfolio \
+  --set-watchlist 000425 600172 000783 600000 002491
+
+# 新增或更新持仓：股票:股数:成本:买入均价
+.venv/bin/python main.py --portfolio \
+  --set-position 000783:6000:9.659:9.522 \
+  --set-position 000425:1500:8.754:8.754
+
+# 清空某只股票持仓，仍保留在自选中
+.venv/bin/python main.py --portfolio --remove-position 000783
+```
+
+数据保存在 `data/portfolio.csv`。日常模式和预测模式每次运行都会用本地最新收盘价刷新
+收益率、市值和浮动盈亏，并向 `STRATEGY_WEBHOOK_PORTFOLIO` 对应机器人推送持仓快照与
+下一工作日规则化操作观察；未配置专属机器人时使用默认 Webhook。
 
 ---
 

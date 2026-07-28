@@ -3,6 +3,7 @@
 import json
 from datetime import date
 
+import pandas as pd
 import requests
 
 from sequoia_x.core.config import Settings
@@ -162,6 +163,96 @@ class FeishuNotifier:
             },
         }
 
+    def _build_portfolio_card(self, portfolio: pd.DataFrame) -> dict:
+        """构建持仓收益与自选股行情卡片。"""
+        holdings = portfolio[pd.to_numeric(portfolio["shares"], errors="coerce").fillna(0) > 0]
+        total_market_value = float(pd.to_numeric(holdings["market_value"], errors="coerce").fillna(0).sum())
+        total_pnl = float(pd.to_numeric(holdings["unrealized_pnl"], errors="coerce").fillna(0).sum())
+        total_cost = total_market_value - total_pnl
+        total_return = total_pnl / total_cost if total_cost else 0.0
+        data_dates = portfolio["data_date"].dropna().astype(str)
+        data_date = data_dates.max() if not data_dates.empty else "未知"
+
+        rows = []
+        for _, row in portfolio.iterrows():
+            shares = float(pd.to_numeric(pd.Series([row["shares"]]), errors="coerce").fillna(0).iloc[0])
+            close = pd.to_numeric(pd.Series([row["latest_close"]]), errors="coerce").iloc[0]
+            if pd.isna(close):
+                continue
+            xq_code = self._to_xueqiu_code(row["symbol"])
+            link = f"[{row['name']} {row['symbol']}](https://xueqiu.com/S/{xq_code})"
+            if shares > 0:
+                return_rate = float(row["return_rate"])
+                pnl = float(row["unrealized_pnl"])
+                rows.append(
+                    f"{link}｜{int(shares)}股｜收盘 {float(close):.3f}｜"
+                    f"收益 {return_rate:+.2%}｜盈亏 {pnl:+,.2f}元"
+                )
+            else:
+                rows.append(f"{link}｜自选｜收盘 {float(close):.3f}")
+
+        return {
+            "msg_type": "interactive",
+            "card": {
+                "header": {
+                    "title": {"tag": "plain_text", "content": "💼 Sequoia-X 自选与持仓"},
+                    "template": "wathet",
+                },
+                "elements": [
+                    {
+                        "tag": "div",
+                        "text": {
+                            "tag": "lark_md",
+                            "content": (
+                                f"**数据日期：** {data_date}\n"
+                                f"**持仓市值：** {total_market_value:,.2f} 元\n"
+                                f"**浮动盈亏：** {total_pnl:+,.2f} 元\n"
+                                f"**组合收益率：** {total_return:+.2%}"
+                            ),
+                        },
+                    },
+                    {"tag": "hr"},
+                    {"tag": "div", "text": {"tag": "lark_md", "content": "\n".join(rows)}},
+                ],
+            },
+        }
+
+    def _build_portfolio_advice_card(self, advice: list) -> dict:
+        """构建下一工作日持仓与自选操作建议卡片。"""
+        next_workday = advice[0].next_workday if advice else "未知"
+        rows = []
+        for item in advice:
+            xq_code = self._to_xueqiu_code(item.symbol)
+            rows.append(
+                f"[{item.name} {item.symbol}](https://xueqiu.com/S/{xq_code})｜"
+                f"**{item.action}**｜风险 {item.risk}\n"
+                f"参考价 {item.reference_price:.3f}｜{item.reason}"
+            )
+        return {
+            "msg_type": "interactive",
+            "card": {
+                "header": {
+                    "title": {
+                        "tag": "plain_text",
+                        "content": f"🧭 下一工作日操作观察 | {next_workday}",
+                    },
+                    "template": "orange",
+                },
+                "elements": [
+                    {"tag": "div", "text": {"tag": "lark_md", "content": "\n\n".join(rows)}},
+                    {
+                        "tag": "note",
+                        "elements": [
+                            {
+                                "tag": "plain_text",
+                                "content": "规则化风险提示，仅供研究参考；节假日顺延，不构成个性化投资承诺。",
+                            }
+                        ],
+                    },
+                ],
+            },
+        }
+
     def _post_payload(self, payload: dict, webhook_key: str, success_message: str) -> None:
         """发送飞书卡片并统一处理响应。"""
         url = self.settings.get_webhook_url(webhook_key)
@@ -236,4 +327,34 @@ class FeishuNotifier:
             payload,
             webhook_key,
             f"预测结果飞书推送成功 [{webhook_key}]，共 {len(results)} 只股票",
+        )
+
+    def send_portfolio(
+        self,
+        portfolio: pd.DataFrame,
+        webhook_key: str = "portfolio",
+    ) -> None:
+        """推送当前自选、持仓市值和收益。"""
+        if portfolio.empty:
+            logger.info("组合为空，跳过飞书推送")
+            return
+        self._post_payload(
+            self._build_portfolio_card(portfolio),
+            webhook_key,
+            f"持仓信息飞书推送成功 [{webhook_key}]",
+        )
+
+    def send_portfolio_advice(
+        self,
+        advice: list,
+        webhook_key: str = "portfolio",
+    ) -> None:
+        """推送下一工作日规则化操作建议。"""
+        if not advice:
+            logger.info("无组合操作建议，跳过飞书推送")
+            return
+        self._post_payload(
+            self._build_portfolio_advice_card(advice),
+            webhook_key,
+            f"组合操作建议飞书推送成功 [{webhook_key}]",
         )
