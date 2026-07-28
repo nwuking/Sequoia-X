@@ -1,16 +1,20 @@
 """数据引擎属性测试。"""
 
 import sqlite3
+import sys
 import tempfile
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 import pandas as pd
+import pytest
 from hypothesis import given, settings as h_settings
 from hypothesis import strategies as st
 
 from sequoia_x.core.config import Settings
-from sequoia_x.data.engine import DataEngine
+from sequoia_x.data.engine import DataEngine, _bs_fetch_batch
 
 
 def make_engine_in(tmp_dir: str) -> tuple[DataEngine, Settings]:
@@ -51,3 +55,54 @@ def test_unique_symbol_date_constraint(symbol: str, trade_date: date) -> None:
                 (symbol, str(trade_date)),
             ).fetchone()[0]
         assert count == 1
+
+
+def test_worker_stops_when_baostock_login_fails() -> None:
+    """登录失败时 worker 不应继续在无效 socket 上批量查询。"""
+    fake_bs = SimpleNamespace(
+        login=MagicMock(return_value=SimpleNamespace(error_code="1", error_msg="blocked")),
+        query_history_k_data_plus=MagicMock(),
+    )
+    with patch.dict(sys.modules, {"baostock": fake_bs}), patch("time.sleep"):
+        success, rows = _bs_fetch_batch(
+            [("000001", "sz.000001", "2026-07-28", "2026-07-28")]
+        )
+
+    assert success is False
+    assert rows == []
+    fake_bs.query_history_k_data_plus.assert_not_called()
+
+
+def test_sync_aborts_when_any_worker_batch_fails() -> None:
+    """任一批次失败时应停止策略前的数据同步，避免使用陈旧数据。"""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        engine, _ = make_engine_in(tmp_dir)
+        yesterday = str(date.today() - timedelta(days=1))
+        with sqlite3.connect(engine.db_path) as conn:
+            conn.execute(
+                "INSERT INTO stock_daily "
+                "(symbol, date, open, high, low, close, volume, turnover) "
+                "VALUES (?, ?, 10, 11, 9, 10.5, 1000, 10500)",
+                ("000001", yesterday),
+            )
+
+        pool = MagicMock()
+        pool.__enter__.return_value.map.return_value = [(False, [])]
+        with patch("multiprocessing.Pool", return_value=pool):
+            with pytest.raises(RuntimeError, match="停止策略执行"):
+                engine.sync_today_bulk()
+
+
+def test_get_latest_date() -> None:
+    """应返回本地行情库中所有股票的最大交易日期。"""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        engine, _ = make_engine_in(tmp_dir)
+        with sqlite3.connect(engine.db_path) as conn:
+            conn.executemany(
+                "INSERT INTO stock_daily "
+                "(symbol, date, open, high, low, close, volume, turnover) "
+                "VALUES (?, ?, 10, 11, 9, 10.5, 1000, 10500)",
+                [("000001", "2026-07-25"), ("600000", "2026-07-27")],
+            )
+
+        assert engine.get_latest_date() == "2026-07-27"

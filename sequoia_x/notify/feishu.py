@@ -52,8 +52,14 @@ class FeishuNotifier:
         bs.logout()
         return mapping
 
-    def _build_card(self, symbols: list[str], strategy_name: str) -> dict:
+    def _build_card(
+        self,
+        symbols: list[str],
+        strategy_name: str,
+        data_date: str | None = None,
+    ) -> dict:
         today = date.today().strftime("%Y-%m-%d")
+        data_date_text = data_date or "未知"
         names = self._get_stock_names(symbols)
 
         links: list[str] = []
@@ -79,7 +85,12 @@ class FeishuNotifier:
                         "tag": "div",
                         "text": {
                             "tag": "lark_md",
-                            "content": f"**日期：** {today}\n**策略：** {strategy_name}\n**选股数量：** {len(symbols)}",
+                            "content": (
+                                f"**推送日期：** {today}\n"
+                                f"**数据日期：** {data_date_text}\n"
+                                f"**策略：** {strategy_name}\n"
+                                f"**选股数量：** {len(symbols)}"
+                            ),
                         },
                     },
                     {"tag": "hr"},
@@ -99,6 +110,7 @@ class FeishuNotifier:
         symbols: list[str],
         strategy_name: str,
         webhook_key: str = "default",
+        data_date: str | None = None,
     ) -> None:
         """
         将选股结果格式化为飞书卡片消息并 POST 至对应 Webhook。
@@ -110,12 +122,13 @@ class FeishuNotifier:
             symbols: 选股结果代码列表。
             strategy_name: 策略名称，用于卡片标题。
             webhook_key: 策略标识，用于路由到对应飞书机器人。
+            data_date: 本地行情库中的最新交易日期。
 
         Raises:
             不抛出异常，HTTP 失败时记录 ERROR 日志。
         """
         url = self.settings.get_webhook_url(webhook_key)
-        payload = self._build_card(symbols, strategy_name)
+        payload = self._build_card(symbols, strategy_name, data_date=data_date)
 
         try:
             resp = requests.post(

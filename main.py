@@ -1,7 +1,8 @@
 """Sequoia-X V2 主程序入口。
 
 两种运行模式：
-  python main.py               # 日常模式：8进程增量补数据 + 跑策略 + 飞书推送（2~3分钟）
+  python main.py               # 日常模式：增量补数据 + 跑策略 + 飞书推送
+  python main.py --force       # 增量同步失败时，使用本地陈旧数据继续推送
   python main.py --backfill    # 回填模式：baostock 拉全市场历史K线（首次/补数据用，约12分钟）
 """
 
@@ -29,12 +30,33 @@ from sequoia_x.strategy.rps_breakout import RpsBreakoutStrategy
 from sequoia_x.strategy.private_placement import PrivatePlacementStrategy
 
 
+def _sync_latest(engine: DataEngine, force: bool, logger) -> None:
+    """同步最新行情；force 模式下允许失败后继续使用本地数据。"""
+    logger.info("开始拉取最新快照...")
+    try:
+        count = engine.sync_today_bulk()
+    except Exception as exc:
+        if not force:
+            raise
+        logger.warning(
+            "⚠️ 增量同步失败，但已启用 --force，将使用本地陈旧数据继续执行策略和推送："
+            f"{exc}"
+        )
+        return
+    logger.info(f"快照同步完成，写入 {count} 只股票")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Sequoia-X V2 选股系统")
     parser.add_argument(
         "--backfill",
         action="store_true",
         help="回填模式：通过 baostock 拉取全市场历史 K 线（约12分钟）",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="增量同步失败时，使用本地陈旧数据继续执行策略并推送",
     )
     args = parser.parse_args()
 
@@ -58,9 +80,7 @@ def main() -> None:
             return
 
         # ── 日常模式：单次 API 补今天 + 策略 + 推送 ──
-        logger.info("开始拉取最新快照...")
-        count = engine.sync_today_bulk()
-        logger.info(f"快照同步完成，写入 {count} 只股票")
+        _sync_latest(engine, force=args.force, logger=logger)
 
         # 4. 策略列表（新增策略在此追加即可）
         strategies: list[BaseStrategy] = [
@@ -74,6 +94,8 @@ def main() -> None:
         ]
 
         notifier = FeishuNotifier(settings)
+        data_date = engine.get_latest_date()
+        logger.info(f"当前策略使用的数据日期：{data_date or '未知'}")
 
         # 5. 遍历策略，有结果则推送至对应机器人
         for strategy in strategies:
@@ -88,6 +110,7 @@ def main() -> None:
                     symbols=selected,
                     strategy_name=strategy_name,
                     webhook_key=strategy.webhook_key,
+                    data_date=data_date,
                 )
             else:
                 logger.info(f"{strategy_name} 无选股结果，跳过推送")

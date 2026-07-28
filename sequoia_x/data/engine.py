@@ -31,26 +31,64 @@ CREATE INDEX IF NOT EXISTS idx_symbol_date ON stock_daily (symbol, date);
 """
 
 
-def _bs_fetch_batch(tasks: list) -> list:
+def _bs_fetch_batch(tasks: list) -> tuple[bool, list]:
     """多进程 worker：独立 login，批量拉取 baostock 数据。"""
+    import time
+
     import baostock as bs
-    bs.login()
+
+    def login() -> bool:
+        for attempt in range(3):
+            try:
+                result = bs.login()
+                if result.error_code == "0":
+                    return True
+                logger.warning(f"baostock worker 登录失败: {result.error_msg}")
+            except Exception as exc:
+                logger.warning(f"baostock worker 登录异常: {exc}")
+            if attempt < 2:
+                time.sleep(2 ** attempt)
+        return False
+
+    if not login():
+        logger.error("baostock worker 多次登录失败，跳过当前批次")
+        return False, []
+
     results = []
-    for symbol, bs_code, start, end in tasks:
-        rs = bs.query_history_k_data_plus(
-            bs_code,
-            "date,open,high,low,close,volume,amount",
-            start_date=start,
-            end_date=end,
-            frequency="d",
-            adjustflag="1",  # 后复权
-        )
-        if rs.error_code != "0":
-            continue
-        while rs.next():
-            results.append([symbol] + rs.get_row_data())
-    bs.logout()
-    return results
+    try:
+        for symbol, bs_code, start, end in tasks:
+            for attempt in range(2):
+                try:
+                    rs = bs.query_history_k_data_plus(
+                        bs_code,
+                        "date,open,high,low,close,volume,amount",
+                        start_date=start,
+                        end_date=end,
+                        frequency="d",
+                        adjustflag="1",  # 后复权
+                    )
+                    if rs.error_code != "0":
+                        raise RuntimeError(rs.error_msg)
+                    while rs.next():
+                        results.append([symbol] + rs.get_row_data())
+                    break
+                except Exception as exc:
+                    logger.warning(f"[{symbol}] 增量拉取失败: {exc}")
+                    if attempt == 0:
+                        try:
+                            bs.logout()
+                        except Exception:
+                            pass
+                        if not login():
+                            return False, results
+                    else:
+                        return False, results
+    finally:
+        try:
+            bs.logout()
+        except Exception:
+            pass
+    return True, results
 
 
 class DataEngine:
@@ -75,6 +113,12 @@ class DataEngine:
                 "SELECT MAX(date) FROM stock_daily WHERE symbol = ?",
                 (symbol,),
             ).fetchone()
+        return row[0] if row and row[0] else None
+
+    def get_latest_date(self) -> str | None:
+        """返回本地行情库中的最新交易日期。"""
+        with sqlite3.connect(self.db_path) as conn:
+            row = conn.execute("SELECT MAX(date) FROM stock_daily").fetchone()
         return row[0] if row and row[0] else None
 
     def get_ohlcv(self, symbol: str) -> pd.DataFrame:
@@ -125,14 +169,22 @@ class DataEngine:
 
         logger.info(f"需要更新 {len(tasks)} 只股票，启动多进程并行拉取...")
 
-        n_workers = min(8, len(tasks))
+        # baostock 对短时间内大量并发登录不稳定，4 个连接更可靠。
+        n_workers = min(4, len(tasks))
         chunks = [tasks[i::n_workers] for i in range(n_workers)]
 
         with Pool(n_workers) as pool:
             batch_results = pool.map(_bs_fetch_batch, chunks)
 
+        failed_batches = sum(not success for success, _ in batch_results)
+        if failed_batches:
+            raise RuntimeError(
+                f"baostock 增量同步失败：{failed_batches}/{len(batch_results)} 个批次异常，"
+                "已停止策略执行，避免使用陈旧或不完整数据"
+            )
+
         all_rows = []
-        for batch in batch_results:
+        for _, batch in batch_results:
             all_rows.extend(batch)
 
         if not all_rows:

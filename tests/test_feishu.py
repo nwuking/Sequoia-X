@@ -12,6 +12,13 @@ from sequoia_x.core.config import Settings
 from sequoia_x.notify.feishu import FeishuNotifier
 
 
+@pytest.fixture(autouse=True)
+def mock_stock_name_lookup():
+    """通知单元测试不访问真实 baostock 服务。"""
+    with patch.object(FeishuNotifier, "_get_stock_names", return_value={}):
+        yield
+
+
 def make_settings(webhook_url: str = "https://example.com/default") -> Settings:
     return Settings(
         db_path="data/test.db",
@@ -42,6 +49,24 @@ def test_notification_contains_all_symbols(symbols: list[str]) -> None:
     card_text = json.dumps(body)
     for symbol in symbols:
         assert symbol in card_text
+
+
+def test_notification_contains_latest_data_date() -> None:
+    """飞书卡片应明确展示策略使用的最新行情日期。"""
+    notifier = FeishuNotifier(make_settings())
+
+    with patch("requests.post") as mock_post:
+        mock_post.return_value = MagicMock(status_code=200)
+        notifier.send(
+            symbols=["000001"],
+            strategy_name="TestStrategy",
+            data_date="2026-07-27",
+        )
+
+    body = json.loads(mock_post.call_args.kwargs["data"])
+    card_text = json.dumps(body, ensure_ascii=False)
+    assert "数据日期" in card_text
+    assert "2026-07-27" in card_text
 
 
 # Feature: sequoia-x-v2, Property 11: 飞书通知使用 ConfigManager 中的 Webhook URL
