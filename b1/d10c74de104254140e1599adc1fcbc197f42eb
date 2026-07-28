@@ -1,0 +1,55 @@
+tests/test_portfolio.py
+  s_6a70ed6d2e12bb::t_50273b6ea17942 51-55
+  s_6a70ed6d2e12bb::t_bb4ce1e3aa7ee3 1-50,56-69
+sequoia_x/notify/feishu.py
+  s_6a70ed6d2e12bb::t_e2308aee834f2f 6,166-255,330-359
+README.md
+  s_6a70ed6d2e12bb::t_59c6d6d3f4ee6c 24,36-55
+sequoia_x/core/config.py
+  s_6a70ed6d2e12bb::t_7235e51a23a711 9
+tests/test_feishu.py
+  s_6a70ed6d2e12bb::t_39708bfae8faa4 8,127-161
+sequoia_x/portfolio/manager.py
+  s_6a70ed6d2e12bb::t_7235e51a23a711 1-5,7-8,10-30,32-33,40-41,81-83,87-89,92-172,180,182-186,189-190,192-217
+  s_6a70ed6d2e12bb::t_16849639029d21 46-62,175,191
+  s_6a70ed6d2e12bb::t_044edc6a10808a 84-86,91,187-188
+  s_6a70ed6d2e12bb::t_50273b6ea17942 6,9,31,34-39,42-45,63-80,90,173-174,176-179,181
+.gitignore
+  s_6a70ed6d2e12bb::t_bb4ce1e3aa7ee3 21
+sequoia_x/portfolio/__init__.py
+  s_6a70ed6d2e12bb::t_7235e51a23a711 1-6
+.env.example
+  s_6a70ed6d2e12bb::t_7235e51a23a711 7-9,23
+main.py
+  s_6a70ed6d2e12bb::t_60e616a75219d1 135-136,141-143
+  s_6a70ed6d2e12bb::t_0ff85ff528571b 19
+  s_6a70ed6d2e12bb::t_eaf00fb2304082 27,105-134,137-140,144-153,167-171,183-200,225,227-237
+  s_6a70ed6d2e12bb::t_b78df13df0693f 238-241
+sequoia_x/portfolio/advisor.py
+  s_6a70ed6d2e12bb::t_7235e51a23a711 1-44,50-60,62-63,65-66,68-72,74-97,99-102
+  s_6a70ed6d2e12bb::t_50273b6ea17942 45-49,61,64,67,73,98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "b1d10c74de104254140e1599adc1fcbc197f42eb",
+  "prompts": {},
+  "logical_commit_id": "b1d10c74de104254140e1599adc1fcbc197f42eb",
+  "humans": {
+    "h_dc6c9c0bce9380": {
+      "author": "yeyongjun <yeyongjun@bigo.sg>"
+    }
+  },
+  "sessions": {
+    "s_6a70ed6d2e12bb": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fa6a0-7fac-7242-a5da-a75dfbf7ecca",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "yeyongjun <yeyongjun@bigo.sg>",
+      "total_additions": 695,
+      "total_deletions": 29
+    }
+  }
+}
