@@ -1,0 +1,6 @@
+﻿symbol,name,is_watchlist,shares,cost_price,buy_avg_price,latest_close,data_date,return_rate,market_value,unrealized_pnl,quote_source,updated_at
+000425,徐工机械,True,1500,8.754,8.754,8.76,2026-07-28,0.0006854009595613775,13140.0,9.000000000000341,realtime_unadjusted,2026-07-28T17:02:04
+000783,长江证券,True,6000,9.659,9.522,8.36,2026-07-28,-0.13448597163267428,50160.0,-7794.000000000007,realtime_unadjusted,2026-07-28T17:02:04
+002491,通鼎互联,True,0,,,15.5,2026-07-28,,0.0,0.0,realtime_unadjusted,2026-07-28T17:02:04
+600000,浦发银行,True,0,,,9.19,2026-07-28,,0.0,0.0,realtime_unadjusted,2026-07-28T17:02:04
+600172,黄河旋风,True,0,,,10.77,2026-07-28,,0.0,0.0,realtime_unadjusted,2026-07-28T17:02:04
