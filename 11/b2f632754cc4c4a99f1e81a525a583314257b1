@@ -1,0 +1,36 @@
+README.md
+  s_349c96c3268bb6::t_192443fc6bc64a 22-23
+  s_349c96c3268bb6::t_f796f241c52815 20
+sequoia_x/data/engine.py
+  s_349c96c3268bb6::t_192443fc6bc64a 394,401,430,449-450,516-517,522
+  s_349c96c3268bb6::t_f796f241c52815 286-287,289-291,293-306,330-372
+tests/test_data_engine.py
+  s_349c96c3268bb6::t_f796f241c52815 17,60-61,65,67-79,84-85,97-103
+  s_349c96c3268bb6::t_192443fc6bc64a 139-189
+main.py
+  s_349c96c3268bb6::t_192443fc6bc64a 6-7,221-225,243
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "11b2f632754cc4c4a99f1e81a525a583314257b1",
+  "prompts": {},
+  "logical_commit_id": "11b2f632754cc4c4a99f1e81a525a583314257b1",
+  "humans": {
+    "h_dc6c9c0bce9380": {
+      "author": "yeyongjun <yeyongjun@bigo.sg>"
+    }
+  },
+  "sessions": {
+    "s_349c96c3268bb6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fac10-5bc9-7c81-ae06-7074ed4558ec",
+        "model": "gpt-5.4"
+      },
+      "human_author": "yeyongjun <yeyongjun@bigo.sg>",
+      "total_additions": 157,
+      "total_deletions": 105
+    }
+  }
+}
