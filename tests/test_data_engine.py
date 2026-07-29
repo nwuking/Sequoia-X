@@ -138,6 +138,34 @@ def test_get_stock_names_from_local_database() -> None:
         }
 
 
+def test_baostock_daily_quota_blocks_new_requests() -> None:
+    """当日本地计数达到阈值时，应阻止新的 baostock 请求。"""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        settings = Settings(
+            db_path=str(Path(tmp_dir) / "test.db"),
+            start_date="2024-01-01",
+            baostock_daily_request_limit=2,
+            feishu_webhook_url="https://example.com/hook",
+        )
+        engine = DataEngine(settings)
+        today = date.today().isoformat()
+        engine._increment_api_usage("baostock", 2, today)
+
+        with pytest.raises(RuntimeError, match="请求配额即将超限"):
+            engine._ensure_baostock_quota(1)
+
+
+def test_baostock_daily_quota_increments_after_request() -> None:
+    """请求成功发起后，应更新本地 baostock 计数。"""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        engine, _ = make_engine_in(tmp_dir)
+        today = date.today().isoformat()
+
+        assert engine._get_api_usage("baostock", today) == 0
+        assert engine._increment_api_usage("baostock", 1, today) == 1
+        assert engine._increment_api_usage("baostock", 2, today) == 3
+
+
 def test_backfill_full_history_overwrites_existing_symbol_rows() -> None:
     """full_history 模式应从 start_date 重拉，并覆盖该股票旧历史。"""
     fake_rows = [

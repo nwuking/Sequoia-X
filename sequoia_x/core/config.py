@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     db_path: str = "data/sequoia_v2.db"
     start_date: str = "2024-01-01"
     portfolio_csv_path: str = "data/portfolio.csv"
+    baostock_daily_request_limit: int = 48000
     feishu_webhook_url: str  # 必填字段，缺失时抛出 ValidationError
     strategy_webhooks: dict[str, str] = {}
 

@@ -65,12 +65,23 @@ CREATE INDEX IF NOT EXISTS idx_financial_symbol_report
 ON financial_factors (symbol, report_date);
 """
 
+_CREATE_API_USAGE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS api_usage (
+    provider     TEXT NOT NULL,
+    usage_date   TEXT NOT NULL,
+    request_count INTEGER NOT NULL DEFAULT 0,
+    updated_at   TEXT NOT NULL,
+    PRIMARY KEY (provider, usage_date)
+);
+"""
+
 class DataEngine:
     """行情数据引擎，负责 SQLite 存储和 baostock 数据同步。"""
 
     def __init__(self, settings: Settings) -> None:
         self.db_path: str = settings.db_path
         self.start_date: str = settings.start_date
+        self.baostock_daily_request_limit: int = settings.baostock_daily_request_limit
         self._init_db()
 
     def _init_db(self) -> None:
@@ -81,8 +92,50 @@ class DataEngine:
             conn.execute(_CREATE_STOCK_BASIC_TABLE_SQL)
             conn.execute(_CREATE_FINANCIAL_FACTORS_TABLE_SQL)
             conn.execute(_CREATE_FINANCIAL_FACTORS_INDEX_SQL)
+            conn.execute(_CREATE_API_USAGE_TABLE_SQL)
             conn.commit()
         logger.info(f"数据库初始化完成：{self.db_path}")
+
+    def _get_api_usage(self, provider: str, usage_date: str | None = None) -> int:
+        usage_date = usage_date or date.today().isoformat()
+        with sqlite3.connect(self.db_path) as conn:
+            row = conn.execute(
+                "SELECT request_count FROM api_usage WHERE provider = ? AND usage_date = ?",
+                (provider, usage_date),
+            ).fetchone()
+        return int(row[0]) if row else 0
+
+    def _increment_api_usage(self, provider: str, count: int = 1, usage_date: str | None = None) -> int:
+        usage_date = usage_date or date.today().isoformat()
+        updated_at = date.today().isoformat()
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                """
+                INSERT INTO api_usage (provider, usage_date, request_count, updated_at)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(provider, usage_date) DO UPDATE SET
+                    request_count = request_count + excluded.request_count,
+                    updated_at = excluded.updated_at
+                """,
+                (provider, usage_date, count, updated_at),
+            )
+            conn.commit()
+            row = conn.execute(
+                "SELECT request_count FROM api_usage WHERE provider = ? AND usage_date = ?",
+                (provider, usage_date),
+            ).fetchone()
+        return int(row[0]) if row else 0
+
+    def _ensure_baostock_quota(self, upcoming_requests: int = 1) -> None:
+        today = date.today().isoformat()
+        used = self._get_api_usage("baostock", today)
+        projected = used + upcoming_requests
+        if projected > self.baostock_daily_request_limit:
+            raise RuntimeError(
+                "baostock 当日请求配额即将超限："
+                f"{today} 已用 {used} 次，请求上限 {self.baostock_daily_request_limit} 次，"
+                f"本次预计再发起 {upcoming_requests} 次"
+            )
 
     def _get_last_date(self, symbol: str) -> str | None:
         with sqlite3.connect(self.db_path) as conn:
@@ -336,6 +389,7 @@ class DataEngine:
                 query_ok = False
                 for attempt in range(2):
                     try:
+                        self._ensure_baostock_quota(1)
                         rs = bs.query_history_k_data_plus(
                             bs_code,
                             "date,open,high,low,close,volume,amount",
@@ -344,6 +398,7 @@ class DataEngine:
                             frequency="d",
                             adjustflag="1",
                         )
+                        self._increment_api_usage("baostock", 1)
                         if rs.error_code != "0":
                             raise RuntimeError(rs.error_msg)
                         while rs.next():
@@ -457,6 +512,7 @@ class DataEngine:
                 query_ok = False
                 for attempt in range(max_retries):
                     try:
+                        self._ensure_baostock_quota(1)
                         rs = bs.query_history_k_data_plus(
                             bs_code,
                             "date,open,high,low,close,volume,amount",
@@ -465,6 +521,7 @@ class DataEngine:
                             frequency="d",
                             adjustflag="1",  # 后复权
                         )
+                        self._increment_api_usage("baostock", 1)
 
                         if rs.error_code != "0":
                             raise RuntimeError(rs.error_msg)
