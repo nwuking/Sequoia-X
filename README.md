@@ -48,6 +48,10 @@ Brier 分数。预测结果是统计概率，不构成收益保证或投资建�
 
 # 清空某只股票持仓，仍保留在自选中
 .venv/bin/python main.py --portfolio --remove-position 000783
+
+# 记录卖出：支持股票代码或中文名；全部卖出后自动清仓并保留自选及历史收益
+.venv/bin/python main.py --portfolio --sell-position 000783:6000:10.20
+.venv/bin/python main.py --portfolio --sell-position 长江证券:6000:10.20
 ```
 
 数据保存在 `data/portfolio.csv`。日常模式和预测模式每次运行都会用本地最新收盘价刷新

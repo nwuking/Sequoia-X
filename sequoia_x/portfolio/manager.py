@@ -22,12 +22,21 @@ class PositionInput:
     buy_avg_price: float
 
 
+@dataclass(frozen=True)
+class SaleInput:
+    symbol: str
+    shares: int
+    sell_price: float
+
+
 class PortfolioManager:
     """维护自选与持仓 CSV，并根据本地行情刷新派生字段。"""
 
     columns = [
         "symbol", "name", "is_watchlist", "shares", "cost_price", "buy_avg_price",
         "latest_close", "data_date", "return_rate", "market_value", "unrealized_pnl",
+        "sold_cost", "sale_amount", "realized_pnl", "historical_return_rate",
+        "total_pnl", "total_return_rate",
         "quote_source", "updated_at",
     ]
 
@@ -149,6 +158,46 @@ class PortfolioManager:
         self.save(result)
         return result
 
+    def sell_positions(self, sales: list[SaleInput]) -> pd.DataFrame:
+        """按当前持仓成本记录卖出，并累计单只股票的历史收益。"""
+        df = self.load().set_index("symbol", drop=False)
+        for sale in sales:
+            symbol = self.resolve_symbol(sale.symbol)
+            if sale.shares <= 0 or sale.sell_price < 0:
+                raise ValueError("卖出股数必须大于 0，卖出价格不能为负数")
+            if symbol not in df.index:
+                raise ValueError(f"{symbol} 不在持仓中")
+
+            current_shares = int(self._number(df.loc[symbol, "shares"]))
+            cost_price = self._number(df.loc[symbol, "cost_price"], default=float("nan"))
+            if current_shares <= 0 or pd.isna(cost_price):
+                raise ValueError(f"{symbol} 当前没有可卖持仓")
+            if sale.shares > current_shares:
+                raise ValueError(f"{symbol} 卖出股数 {sale.shares} 超过持仓 {current_shares}")
+
+            sold_cost = self._number(df.loc[symbol, "sold_cost"]) + cost_price * sale.shares
+            sale_amount = self._number(df.loc[symbol, "sale_amount"]) + sale.sell_price * sale.shares
+            realized_pnl = sale_amount - sold_cost
+            remaining = current_shares - sale.shares
+
+            df.loc[symbol, "is_watchlist"] = True
+            df.loc[symbol, "shares"] = remaining
+            df.loc[symbol, "sold_cost"] = sold_cost
+            df.loc[symbol, "sale_amount"] = sale_amount
+            df.loc[symbol, "realized_pnl"] = realized_pnl
+            df.loc[symbol, "historical_return_rate"] = realized_pnl / sold_cost if sold_cost else 0.0
+            if remaining == 0:
+                df.loc[symbol, ["cost_price", "buy_avg_price", "market_value",
+                                "unrealized_pnl", "return_rate"]] = [
+                    pd.NA, pd.NA, 0.0, 0.0, pd.NA,
+                ]
+            self._update_total_fields(df, symbol)
+            df.loc[symbol, "updated_at"] = datetime.now().isoformat(timespec="seconds")
+
+        result = df.reset_index(drop=True)
+        self.save(result)
+        return result
+
     def remove_positions(self, values: list[str]) -> pd.DataFrame:
         df = self.load().set_index("symbol", drop=False)
         for value in values:
@@ -177,6 +226,7 @@ class PortfolioManager:
                         "latest_close", "data_date", "return_rate", "market_value",
                         "unrealized_pnl", "quote_source",
                     ]] = [pd.NA, pd.NA, pd.NA, pd.NA, pd.NA, pd.NA]
+                self._update_total_fields(df, index)
                 continue
             latest_close, data_date = quote
             old_close = pd.to_numeric(pd.Series([row["latest_close"]]), errors="coerce").iloc[0]
@@ -196,11 +246,28 @@ class PortfolioManager:
             else:
                 df.loc[index, "return_rate"] = pd.NA
                 df.loc[index, "unrealized_pnl"] = 0.0
+            self._update_total_fields(df, index)
             df.loc[index, "updated_at"] = now
 
         self.save(df)
         logger.info("组合行情已更新" if changed else "组合行情已是最新，无需更新")
         return df, changed
+
+    @staticmethod
+    def _number(value, default: float = 0.0) -> float:
+        number = pd.to_numeric(pd.Series([value]), errors="coerce").iloc[0]
+        return default if pd.isna(number) else float(number)
+
+    def _update_total_fields(self, df: pd.DataFrame, index) -> None:
+        shares = self._number(df.loc[index, "shares"])
+        cost_price = self._number(df.loc[index, "cost_price"])
+        sold_cost = self._number(df.loc[index, "sold_cost"])
+        realized_pnl = self._number(df.loc[index, "realized_pnl"])
+        unrealized_pnl = self._number(df.loc[index, "unrealized_pnl"])
+        total_cost = sold_cost + cost_price * shares
+        total_pnl = realized_pnl + unrealized_pnl
+        df.loc[index, "total_pnl"] = total_pnl
+        df.loc[index, "total_return_rate"] = total_pnl / total_cost if total_cost else 0.0
 
     @staticmethod
     def parse_position(value: str) -> PositionInput:
@@ -215,3 +282,11 @@ class PortfolioManager:
             cost_price=cost,
             buy_avg_price=float(parts[3]) if len(parts) == 4 else cost,
         )
+
+    @staticmethod
+    def parse_sale(value: str) -> SaleInput:
+        """解析 CODE:SHARES:SELL_PRICE 格式。"""
+        parts = [part.strip() for part in value.replace(",", ":").split(":")]
+        if len(parts) != 3:
+            raise ValueError("卖出格式应为 股票:股数:卖出价格")
+        return SaleInput(symbol=parts[0], shares=int(parts[1]), sell_price=float(parts[2]))

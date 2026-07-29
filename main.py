@@ -107,6 +107,7 @@ def _run_portfolio(
     settings,
     watchlist: list[str] | None = None,
     positions: list[str] | None = None,
+    sales: list[str] | None = None,
     remove_positions: list[str] | None = None,
 ) -> None:
     """更新本地组合、刷新收益并推送持仓与下一工作日建议。"""
@@ -115,6 +116,8 @@ def _run_portfolio(
         manager.set_watchlist(watchlist)
     if positions:
         manager.upsert_positions([manager.parse_position(value) for value in positions])
+    if sales:
+        manager.sell_positions([manager.parse_sale(value) for value in sales])
     if remove_positions:
         manager.remove_positions(remove_positions)
 
@@ -127,7 +130,7 @@ def _run_portfolio(
     table = Table(title="自选与持仓")
     table.add_column("名称")
     table.add_column("代码")
-    for column in ("股数", "最新收盘", "收益率", "浮动盈亏"):
+    for column in ("股数", "最新收盘", "整体收益率", "整体盈亏"):
         table.add_column(column, justify="right")
     for _, row in portfolio.iterrows():
         shares_value = row["shares"]
@@ -139,8 +142,8 @@ def _run_portfolio(
             row["symbol"],
             str(shares),
             f"{float(close_value):.3f}" if has_quote else "-",
-            f"{float(row['return_rate']):+.2%}" if shares > 0 and has_quote else "-",
-            f"{float(row['unrealized_pnl']):+,.2f}" if shares > 0 and has_quote else "-",
+            f"{float(row['total_return_rate']):+.2%}",
+            f"{float(row['total_pnl']):+,.2f}",
         )
     console.print(table)
     console.print(f"CSV：{settings.portfolio_csv_path}")
@@ -169,6 +172,12 @@ def main() -> None:
         "--portfolio",
         action="store_true",
         help="刷新本地自选与持仓，计算收益并推送飞书操作建议",
+    )
+    parser.add_argument(
+        "--sell-position",
+        action="append",
+        metavar="代码或中文名:股数:卖出价格",
+        help="按股票代码或中文名记录卖出交易并更新历史收益，可重复指定",
     )
     parser.add_argument(
         "--force",
@@ -225,12 +234,14 @@ def main() -> None:
             _run_portfolio(engine, settings)
             return
 
-        if args.portfolio or args.set_watchlist or args.set_position or args.remove_position:
+        if (args.portfolio or args.set_watchlist or args.set_position or args.sell_position
+                or args.remove_position):
             _run_portfolio(
                 engine,
                 settings,
                 watchlist=args.set_watchlist,
                 positions=args.set_position,
+                sales=args.sell_position,
                 remove_positions=args.remove_position,
             )
             return

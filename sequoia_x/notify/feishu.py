@@ -165,10 +165,27 @@ class FeishuNotifier:
 
     def _build_portfolio_card(self, portfolio: pd.DataFrame) -> dict:
         """构建持仓收益与自选股行情卡片。"""
+        def numeric_column(name: str) -> pd.Series:
+            if name not in portfolio.columns:
+                return pd.Series(0.0, index=portfolio.index)
+            return pd.to_numeric(portfolio[name], errors="coerce").fillna(0)
+
         holdings = portfolio[pd.to_numeric(portfolio["shares"], errors="coerce").fillna(0) > 0]
         total_market_value = float(pd.to_numeric(holdings["market_value"], errors="coerce").fillna(0).sum())
         total_pnl = float(pd.to_numeric(holdings["unrealized_pnl"], errors="coerce").fillna(0).sum())
-        total_cost = total_market_value - total_pnl
+        realized_pnl = float(numeric_column("realized_pnl").sum())
+        total_pnl += realized_pnl
+        if "cost_price" in holdings.columns:
+            current_cost = float(
+                (pd.to_numeric(holdings["cost_price"], errors="coerce").fillna(0)
+                 * pd.to_numeric(holdings["shares"], errors="coerce").fillna(0)).sum()
+            )
+        else:
+            current_cost = total_market_value - float(
+                pd.to_numeric(holdings["unrealized_pnl"], errors="coerce").fillna(0).sum()
+            )
+        sold_cost = float(numeric_column("sold_cost").sum())
+        total_cost = current_cost + sold_cost
         total_return = total_pnl / total_cost if total_cost else 0.0
         data_dates = portfolio["data_date"].dropna().astype(str)
         data_date = data_dates.max() if not data_dates.empty else "未知"
@@ -182,14 +199,25 @@ class FeishuNotifier:
             xq_code = self._to_xueqiu_code(row["symbol"])
             link = f"[{row['name']} {row['symbol']}](https://xueqiu.com/S/{xq_code})"
             if shares > 0:
-                return_rate = float(row["return_rate"])
-                pnl = float(row["unrealized_pnl"])
+                return_rate = float(row.get("total_return_rate", row["return_rate"]))
+                pnl = float(row.get("total_pnl", row["unrealized_pnl"]))
                 rows.append(
                     f"{link}｜{int(shares)}股｜收盘 {float(close):.3f}｜"
-                    f"收益 {return_rate:+.2%}｜盈亏 {pnl:+,.2f}元"
+                    f"整体收益 {return_rate:+.2%}｜整体盈亏 {pnl:+,.2f}元"
                 )
             else:
-                rows.append(f"{link}｜自选｜收盘 {float(close):.3f}")
+                history_rate_value = pd.to_numeric(
+                    pd.Series([row.get("historical_return_rate", 0)]), errors="coerce"
+                ).fillna(0).iloc[0]
+                history_pnl_value = pd.to_numeric(
+                    pd.Series([row.get("realized_pnl", 0)]), errors="coerce"
+                ).fillna(0).iloc[0]
+                history_rate = float(history_rate_value)
+                history_pnl = float(history_pnl_value)
+                rows.append(
+                    f"{link}｜自选｜收盘 {float(close):.3f}｜"
+                    f"历史收益 {history_rate:+.2%}｜历史盈亏 {history_pnl:+,.2f}元"
+                )
 
         return {
             "msg_type": "interactive",
@@ -206,7 +234,7 @@ class FeishuNotifier:
                             "content": (
                                 f"**数据日期：** {data_date}\n"
                                 f"**持仓市值：** {total_market_value:,.2f} 元\n"
-                                f"**浮动盈亏：** {total_pnl:+,.2f} 元\n"
+                                f"**整体盈亏：** {total_pnl:+,.2f} 元\n"
                                 f"**组合收益率：** {total_return:+.2%}"
                             ),
                         },

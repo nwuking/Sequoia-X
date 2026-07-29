@@ -67,3 +67,40 @@ def test_portfolio_refresh_and_advice() -> None:
         assert holding["return_rate"] == holding["latest_close"] / 9.659 - 1
         assert Path(csv_path).exists()
         assert {item.symbol for item in advice} == {"000783", "000425"}
+
+
+def test_sell_position_tracks_total_and_history_then_clears_holding() -> None:
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        engine = build_engine(tmp_dir)
+        manager = PortfolioManager(
+            engine,
+            str(Path(tmp_dir) / "portfolio.csv"),
+            quote_fetcher=lambda _symbol: (12.0, "2026-04-22"),
+        )
+        manager.upsert_positions([PositionInput("000783", 1000, 10.0, 10.0)])
+        manager.sell_positions([manager.parse_sale("长江证券:400:11")])
+        portfolio, _ = manager.refresh()
+        partial = portfolio.iloc[0]
+        assert partial["shares"] == 600
+        assert partial["realized_pnl"] == 400
+        assert partial["total_pnl"] == 1600
+        assert partial["total_return_rate"] == 0.16
+
+        manager.sell_positions([manager.parse_sale("000783:600:9")])
+        cleared = manager.load().iloc[0]
+        assert cleared["shares"] == 0
+        assert bool(cleared["is_watchlist"]) is True
+        assert pd.isna(cleared["cost_price"])
+        assert cleared["realized_pnl"] == -200
+        assert cleared["historical_return_rate"] == -0.02
+        assert cleared["total_pnl"] == -200
+        assert cleared["total_return_rate"] == -0.02
+
+
+def test_sell_position_rejects_more_than_holding() -> None:
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        engine = build_engine(tmp_dir)
+        manager = PortfolioManager(engine, str(Path(tmp_dir) / "portfolio.csv"))
+        manager.upsert_positions([PositionInput("000783", 100, 10.0, 10.0)])
+        with np.testing.assert_raises_regex(ValueError, "超过持仓"):
+            manager.sell_positions([manager.parse_sale("000783:101:11")])
