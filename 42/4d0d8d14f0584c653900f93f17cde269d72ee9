@@ -1,0 +1,43 @@
+tests/test_portfolio.py
+  s_46582069bd900a::t_632da0032c5228 70-80,82-106
+  s_46582069bd900a::t_820a5d68530f56 81
+sequoia_x/notify/feishu.py
+  s_46582069bd900a::t_632da0032c5228 177,188,206,217-220,237
+  s_46582069bd900a::t_b170a44932a820 209,211-212,214-216
+  s_46582069bd900a::t_e9434e1ff005c2 168-172,176,178-187,202-203,210,213
+main.py
+  s_46582069bd900a::t_820a5d68530f56 179-180
+  s_46582069bd900a::t_632da0032c5228 110,119-120,133,145-146,177-178,181-182,237-238,244
+sequoia_x/portfolio/manager.py
+  s_46582069bd900a::t_632da0032c5228 25-31,38-39,157-196,249,255-271,285-292
+  s_46582069bd900a::t_b170a44932a820 229
+README.md
+  s_46582069bd900a::t_820a5d68530f56 52,54
+  s_46582069bd900a::t_632da0032c5228 51,53
+sequoia_x/portfolio/__init__.py
+  s_46582069bd900a::t_632da0032c5228 4,6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "424d0d8d14f0584c653900f93f17cde269d72ee9",
+  "prompts": {},
+  "logical_commit_id": "424d0d8d14f0584c653900f93f17cde269d72ee9",
+  "humans": {
+    "h_dc6c9c0bce9380": {
+      "author": "yeyongjun <yeyongjun@bigo.sg>"
+    }
+  },
+  "sessions": {
+    "s_46582069bd900a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fabe7-a6bf-7922-b282-8495696cb617",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "yeyongjun <yeyongjun@bigo.sg>",
+      "total_additions": 183,
+      "total_deletions": 28
+    }
+  }
+}
