@@ -14,7 +14,7 @@ from hypothesis import given, settings as h_settings
 from hypothesis import strategies as st
 
 from sequoia_x.core.config import Settings
-from sequoia_x.data.engine import DataEngine, _bs_fetch_batch
+from sequoia_x.data.engine import DataEngine
 
 
 def make_engine_in(tmp_dir: str) -> tuple[DataEngine, Settings]:
@@ -57,24 +57,32 @@ def test_unique_symbol_date_constraint(symbol: str, trade_date: date) -> None:
         assert count == 1
 
 
-def test_worker_stops_when_baostock_login_fails() -> None:
-    """登录失败时 worker 不应继续在无效 socket 上批量查询。"""
+def test_sync_today_bulk_stops_when_baostock_login_fails() -> None:
+    """登录失败时增量同步不应继续在无效连接上查询。"""
     fake_bs = SimpleNamespace(
         login=MagicMock(return_value=SimpleNamespace(error_code="1", error_msg="blocked")),
         query_history_k_data_plus=MagicMock(),
+        logout=MagicMock(),
     )
-    with patch.dict(sys.modules, {"baostock": fake_bs}), patch("time.sleep"):
-        success, rows = _bs_fetch_batch(
-            [("000001", "sz.000001", "2026-07-28", "2026-07-28")]
-        )
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        engine, _ = make_engine_in(tmp_dir)
+        yesterday = str(date.today() - timedelta(days=1))
+        with sqlite3.connect(engine.db_path) as conn:
+            conn.execute(
+                "INSERT INTO stock_daily "
+                "(symbol, date, open, high, low, close, volume, turnover) "
+                "VALUES (?, ?, 10, 11, 9, 10.5, 1000, 10500)",
+                ("000001", yesterday),
+            )
+        with patch.dict(sys.modules, {"baostock": fake_bs}), patch("time.sleep"):
+            with pytest.raises(RuntimeError, match="登录异常"):
+                engine.sync_today_bulk()
 
-    assert success is False
-    assert rows == []
     fake_bs.query_history_k_data_plus.assert_not_called()
 
 
-def test_sync_aborts_when_any_worker_batch_fails() -> None:
-    """任一批次失败时应停止策略前的数据同步，避免使用陈旧数据。"""
+def test_sync_aborts_when_any_symbol_query_fails() -> None:
+    """任一股票拉取失败时应停止策略前的数据同步。"""
     with tempfile.TemporaryDirectory() as tmp_dir:
         engine, _ = make_engine_in(tmp_dir)
         yesterday = str(date.today() - timedelta(days=1))
@@ -86,10 +94,13 @@ def test_sync_aborts_when_any_worker_batch_fails() -> None:
                 ("000001", yesterday),
             )
 
-        pool = MagicMock()
-        pool.__enter__.return_value.map.return_value = [(False, [])]
-        with patch("multiprocessing.Pool", return_value=pool):
-            with pytest.raises(RuntimeError, match="停止策略执行"):
+        fake_bs = SimpleNamespace(
+            login=MagicMock(return_value=SimpleNamespace(error_code="0", error_msg="")),
+            logout=MagicMock(),
+            query_history_k_data_plus=MagicMock(side_effect=RuntimeError("blocked")),
+        )
+        with patch.dict(sys.modules, {"baostock": fake_bs}), patch("time.sleep"):
+            with pytest.raises(RuntimeError, match="000001 拉取异常"):
                 engine.sync_today_bulk()
 
 
@@ -125,3 +136,54 @@ def test_get_stock_names_from_local_database() -> None:
             "600519": "贵州茅台",
             "000001": "平安银行",
         }
+
+
+def test_backfill_full_history_overwrites_existing_symbol_rows() -> None:
+    """full_history 模式应从 start_date 重拉，并覆盖该股票旧历史。"""
+    fake_rows = [
+        ["2024-01-02", "10", "11", "9", "10.5", "1000", "10500"],
+        ["2024-01-03", "10.5", "11.5", "10", "11", "1200", "13200"],
+    ]
+
+    class FakeResult:
+        error_code = "0"
+        error_msg = ""
+        fields = ["date", "open", "high", "low", "close", "volume", "amount"]
+
+        def __init__(self, rows):
+            self._rows = rows
+            self._idx = -1
+
+        def next(self):
+            self._idx += 1
+            return self._idx < len(self._rows)
+
+        def get_row_data(self):
+            return self._rows[self._idx]
+
+    fake_bs = SimpleNamespace(
+        login=MagicMock(return_value=SimpleNamespace(error_code="0", error_msg="")),
+        logout=MagicMock(),
+        query_history_k_data_plus=MagicMock(return_value=FakeResult(fake_rows)),
+    )
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        engine, _ = make_engine_in(tmp_dir)
+        with sqlite3.connect(engine.db_path) as conn:
+            conn.execute(
+                "INSERT INTO stock_daily "
+                "(symbol, date, open, high, low, close, volume, turnover) "
+                "VALUES (?, ?, 20, 21, 19, 20.5, 100, 2050)",
+                ("000001", "2026-07-01"),
+            )
+
+        with patch.dict(sys.modules, {"baostock": fake_bs}), patch("time.sleep"):
+            engine.backfill(["000001"], full_history=True)
+
+        with sqlite3.connect(engine.db_path) as conn:
+            rows = conn.execute(
+                "SELECT date, close FROM stock_daily WHERE symbol = ? ORDER BY date",
+                ("000001",),
+            ).fetchall()
+
+    assert rows == [("2024-01-02", 10.5), ("2024-01-03", 11.0)]

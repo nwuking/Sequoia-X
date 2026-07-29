@@ -3,7 +3,8 @@
 两种运行模式：
   python main.py               # 日常模式：增量补数据 + 跑策略 + 飞书推送
   python main.py --force       # 增量同步失败时，使用本地陈旧数据继续推送
-  python main.py --backfill    # 回填模式：baostock 拉全市场历史K线（首次/补数据用，约12分钟）
+  python main.py --backfill    # 回填模式：按本地最后日期续传历史K线
+  python main.py --backfill --full-history  # 强制从 START_DATE 全量补齐历史
 """
 
 import argparse
@@ -217,6 +218,11 @@ def main() -> None:
         metavar="STOCK",
         help="清空指定股票持仓但保留在自选中，可重复指定",
     )
+    parser.add_argument(
+        "--full-history",
+        action="store_true",
+        help="配合 --backfill 使用：忽略本地最后日期，强制从 START_DATE 全量补齐历史",
+    )
     args = parser.parse_args()
 
     try:
@@ -234,7 +240,7 @@ def main() -> None:
             # ── 回填模式：单线程保守拉历史 K 线，自动多轮重跑 ──
             logger.info("进入回填模式...")
             all_symbols = engine.get_all_symbols()
-            engine.backfill(all_symbols)
+            engine.backfill(all_symbols, full_history=args.full_history)
             logger.info("Sequoia-X V2 回填模式运行完成")
             return
 

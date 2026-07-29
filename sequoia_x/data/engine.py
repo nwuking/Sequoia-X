@@ -65,67 +65,6 @@ CREATE INDEX IF NOT EXISTS idx_financial_symbol_report
 ON financial_factors (symbol, report_date);
 """
 
-
-def _bs_fetch_batch(tasks: list) -> tuple[bool, list]:
-    """多进程 worker：独立 login，批量拉取 baostock 数据。"""
-    import time
-
-    import baostock as bs
-
-    def login() -> bool:
-        for attempt in range(3):
-            try:
-                result = bs.login()
-                if result.error_code == "0":
-                    return True
-                logger.warning(f"baostock worker 登录失败: {result.error_msg}")
-            except Exception as exc:
-                logger.warning(f"baostock worker 登录异常: {exc}")
-            if attempt < 2:
-                time.sleep(2 ** attempt)
-        return False
-
-    if not login():
-        logger.error("baostock worker 多次登录失败，跳过当前批次")
-        return False, []
-
-    results = []
-    try:
-        for symbol, bs_code, start, end in tasks:
-            for attempt in range(2):
-                try:
-                    rs = bs.query_history_k_data_plus(
-                        bs_code,
-                        "date,open,high,low,close,volume,amount",
-                        start_date=start,
-                        end_date=end,
-                        frequency="d",
-                        adjustflag="1",  # 后复权
-                    )
-                    if rs.error_code != "0":
-                        raise RuntimeError(rs.error_msg)
-                    while rs.next():
-                        results.append([symbol] + rs.get_row_data())
-                    break
-                except Exception as exc:
-                    logger.warning(f"[{symbol}] 增量拉取失败: {exc}")
-                    if attempt == 0:
-                        try:
-                            bs.logout()
-                        except Exception:
-                            pass
-                        if not login():
-                            return False, results
-                    else:
-                        return False, results
-    finally:
-        try:
-            bs.logout()
-        except Exception:
-            pass
-    return True, results
-
-
 class DataEngine:
     """行情数据引擎，负责 SQLite 存储和 baostock 数据同步。"""
 
@@ -344,11 +283,26 @@ class DataEngine:
     # ── 数据同步 ──
 
     def sync_today_bulk(self) -> int:
-        """多进程并行通过 baostock 拉取增量数据（后复权），写入 SQLite。"""
+        """通过单连接串行拉取增量数据（后复权），写入 SQLite。"""
+        import time
         from datetime import date, timedelta
-        from multiprocessing import Pool
+
+        import baostock as bs
 
         today_str = date.today().strftime("%Y-%m-%d")
+
+        def _login() -> bool:
+            for attempt in range(3):
+                try:
+                    lg = bs.login()
+                    if lg.error_code == "0":
+                        return True
+                    logger.warning(f"baostock 登录失败: {lg.error_msg}")
+                except Exception as exc:
+                    logger.warning(f"baostock 登录异常: {exc}")
+                if attempt < 2:
+                    time.sleep(2 ** attempt)
+            return False
 
         tasks = []
         with sqlite3.connect(self.db_path) as conn:
@@ -372,25 +326,50 @@ class DataEngine:
             logger.info("所有股票已是最新，无需更新")
             return 0
 
-        logger.info(f"需要更新 {len(tasks)} 只股票，启动多进程并行拉取...")
-
-        # baostock 对短时间内大量并发登录不稳定，4 个连接更可靠。
-        n_workers = min(4, len(tasks))
-        chunks = [tasks[i::n_workers] for i in range(n_workers)]
-
-        with Pool(n_workers) as pool:
-            batch_results = pool.map(_bs_fetch_batch, chunks)
-
-        failed_batches = sum(not success for success, _ in batch_results)
-        if failed_batches:
-            raise RuntimeError(
-                f"baostock 增量同步失败：{failed_batches}/{len(batch_results)} 个批次异常，"
-                "已停止策略执行，避免使用陈旧或不完整数据"
-            )
-
         all_rows = []
-        for _, batch in batch_results:
-            all_rows.extend(batch)
+        logger.info(f"需要更新 {len(tasks)} 只股票，按 baostock 单连接限制串行拉取...")
+        if not _login():
+            raise RuntimeError("baostock 增量同步失败：登录异常，已停止策略执行")
+
+        try:
+            for symbol, bs_code, start, end in tasks:
+                query_ok = False
+                for attempt in range(2):
+                    try:
+                        rs = bs.query_history_k_data_plus(
+                            bs_code,
+                            "date,open,high,low,close,volume,amount",
+                            start_date=start,
+                            end_date=end,
+                            frequency="d",
+                            adjustflag="1",
+                        )
+                        if rs.error_code != "0":
+                            raise RuntimeError(rs.error_msg)
+                        while rs.next():
+                            all_rows.append([symbol] + rs.get_row_data())
+                        query_ok = True
+                        break
+                    except Exception as exc:
+                        logger.warning(f"[{symbol}] 增量拉取失败: {exc}")
+                        try:
+                            bs.logout()
+                        except Exception:
+                            pass
+                        time.sleep(2 ** attempt)
+                        if attempt == 0 and _login():
+                            continue
+                        break
+                if not query_ok:
+                    raise RuntimeError(
+                        f"baostock 增量同步失败：{symbol} 拉取异常，已停止策略执行，"
+                        "避免使用陈旧或不完整数据"
+                    )
+        finally:
+            try:
+                bs.logout()
+            except Exception:
+                pass
 
         if not all_rows:
             logger.info("无新数据（可能非交易日）")
@@ -412,13 +391,14 @@ class DataEngine:
         logger.info(f"sync_today_bulk: 写入 {count} 条数据")
         return count
 
-    def backfill(self, symbols: list[str]) -> None:
+    def backfill(self, symbols: list[str], full_history: bool = False) -> None:
         """通过 baostock 批量回填历史日 K 线数据（后复权）。
 
         容错机制：
         - 单只股票失败自动重试 3 次，间隔递增（2s/4s/8s）
         - 每 200 只股票自动重连 baostock（防止长连接超时）
         - 已入库的自动 skip，中断后可重跑续传
+        - full_history=True 时强制从 start_date 全量补齐，并覆盖本地该股票历史
         """
         import time
         from datetime import date, timedelta
@@ -447,7 +427,7 @@ class DataEngine:
         try:
             for i, symbol in enumerate(symbols):
                 last_date = self._get_last_date(symbol)
-                if last_date and last_date >= today_str:
+                if not full_history and last_date and last_date >= today_str:
                     skipped += 1
                     if (i + 1) % 500 == 0:
                         logger.info(
@@ -466,8 +446,8 @@ class DataEngine:
                         return
                     since_reconnect = 0
 
-                start = last_date or self.start_date
-                if last_date:
+                start = self.start_date if full_history else (last_date or self.start_date)
+                if last_date and not full_history:
                     start = (date.fromisoformat(last_date) + timedelta(days=1)).strftime("%Y-%m-%d")
 
                 bs_code = self._to_baostock_code(symbol)
@@ -533,10 +513,13 @@ class DataEngine:
 
                 try:
                     with sqlite3.connect(self.db_path) as conn:
+                        if full_history:
+                            conn.execute("DELETE FROM stock_daily WHERE symbol = ?", (symbol,))
                         df.to_sql(
                             "stock_daily", conn, if_exists="append",
                             index=False, method="multi", chunksize=500,
                         )
+                        conn.commit()
                 except sqlite3.IntegrityError:
                     pass
 
