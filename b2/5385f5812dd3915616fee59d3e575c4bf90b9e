@@ -1,0 +1,59 @@
+tests/test_low_price_multi_factor.py
+  s_349c96c3268bb6::t_eade1a15f0f1d8 1-60,62-67
+  s_349c96c3268bb6::t_05b562f3661521 61
+  s_349c96c3268bb6::t_52118551a60ee0 68-115
+tests/test_financial_factors.py
+  s_349c96c3268bb6::t_05b562f3661521 1-41,52-65
+  s_349c96c3268bb6::t_52118551a60ee0 42-51,66
+sequoia_x/notify/feishu.py
+  s_349c96c3268bb6::t_c992b28a632822 248,250-252,262-281,294-315,422,426,430
+sequoia_x/data/engine.py
+  s_349c96c3268bb6::t_77e11cb40e16c7 1,4,42-49,52-68,143-144,187-206,212-281,294-301,304-319,321,323-327,330-342
+  s_349c96c3268bb6::t_52118551a60ee0 50-51,282-293,302-303,320,322,328-329
+sequoia_x/portfolio/advisor.py
+  s_349c96c3268bb6::t_c2309525aaffd0 73-74,78-83,89
+  s_349c96c3268bb6::t_c992b28a632822 1,9,24-52,56,58,66-72,75-77,84-88,90-145,210-212
+README.md
+  s_349c96c3268bb6::t_05b562f3661521 23
+  s_349c96c3268bb6::t_eade1a15f0f1d8 78,149
+  s_349c96c3268bb6::t_52118551a60ee0 35-37
+  s_349c96c3268bb6::t_dfe78530a736d6 38
+sequoia_x/strategy/low_price_multi_factor.py
+  s_349c96c3268bb6::t_eade1a15f0f1d8 1-94,101-111,113-115,119-120,156,159
+  s_349c96c3268bb6::t_05b562f3661521 116-118,121-124,138-140,142-146,150-154
+  s_349c96c3268bb6::t_62336aa7130379 95-100,112,155,157-158,160-161
+  s_349c96c3268bb6::t_52118551a60ee0 125-137,141,147-149
+tests/test_portfolio.py
+  s_349c96c3268bb6::t_5c31be39948812 13,16-20,22-25,28-34,50-63,65-71,91-92,99-100,138-166,175,180-184
+  s_349c96c3268bb6::t_c2309525aaffd0 167-174,176-179,185
+sequoia_x/portfolio/__init__.py
+  s_349c96c3268bb6::t_c992b28a632822 3-9,12-21
+main.py
+  s_349c96c3268bb6::t_05b562f3661521 178-184,244-249
+  s_349c96c3268bb6::t_c992b28a632822 152-153,156
+  s_349c96c3268bb6::t_eade1a15f0f1d8 33,279
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "b25385f5812dd3915616fee59d3e575c4bf90b9e",
+  "prompts": {},
+  "logical_commit_id": "b25385f5812dd3915616fee59d3e575c4bf90b9e",
+  "humans": {
+    "h_dc6c9c0bce9380": {
+      "author": "yeyongjun <yeyongjun@bigo.sg>"
+    }
+  },
+  "sessions": {
+    "s_349c96c3268bb6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fac10-5bc9-7c81-ae06-7074ed4558ec",
+        "model": "gpt-5.4"
+      },
+      "human_author": "yeyongjun <yeyongjun@bigo.sg>",
+      "total_additions": 840,
+      "total_deletions": 47
+    }
+  }
+}
