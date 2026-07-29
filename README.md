@@ -20,6 +20,7 @@ Sequoia-X V2 是面向 A 股市场的量化选股系统，基于现代 Python �
 .venv/bin/python main.py                # 日常模式：4进程增量补数据 + 跑策略 + 飞书推送
 .venv/bin/python main.py --force        # 同步失败时使用本地陈旧数据继续选股并推送
 .venv/bin/python main.py --backfill     # 回填模式：全市场历史K线一次性灌入（约12分钟）
+.venv/bin/python main.py --sync-financials 20260331  # 同步某一期全市场财务因子
 .venv/bin/python main.py --predict 600519 000001 --horizon 5  # 指定股票预测未来5个交易日
 .venv/bin/python main.py --portfolio    # 刷新持仓收益并推送下一工作日操作观察
 ```
@@ -30,6 +31,10 @@ Sequoia-X V2 是面向 A 股市场的量化选股系统，基于现代 Python �
 预测模式完全使用本地历史行情，不执行增量同步，并将结果推送至飞书。模型采用线性逻辑回归与
 非线性梯度提升等权集成，并显示严格按时间切分的样本外 AUC、准确率、基准准确率和
 Brier 分数。预测结果是统计概率，不构成收益保证或投资建议。
+
+财务因子同步使用 `AKShare` 对接东方财富的业绩报表和 A 股实时估值数据，建议按季度执行一次
+`--sync-financials`。低价多因子策略在本地存在财务因子时会自动叠加 `ROE / 营收同比 / 净利润同比 / 毛利率 /
+经营现金流质量 / PE / PB` 等分数；若尚未同步，则自动回退为纯行情多因子版本。
 
 可选配置 `STRATEGY_WEBHOOK_PREDICTION` 使用独立的预测机器人；未配置时回退到默认
 `FEISHU_WEBHOOK_URL`。
@@ -70,6 +75,7 @@ Brier 分数。预测结果是统计概率，不构成收益保证或投资建�
 | **LimitUpShakeout** | 涨停洗盘回踩确认 |
 | **UptrendLimitDown** | 上升趋势中的跌停反包 |
 | **RpsBreakout** | 欧奈尔 RPS 相对强度突破 |
+| **LowPriceMultiFactor** | 30元以下低价股多因子轮动：动量 + 低波动 + 趋势 + 流动性，固定前3名 |
 
 ---
 
@@ -140,6 +146,7 @@ Sequoia-X/
 │   │   ├── limit_up_shakeout.py # 涨停洗盘策略
 │   │   ├── uptrend_limit_down.py # 上升跌停策略
 │   │   └── rps_breakout.py      # RPS 突破策略
+│   │   └── low_price_multi_factor.py # 低价多因子轮动策略
 │   └── notify/
 │       └── feishu.py            # 飞书 Webhook 推送
 └── tests/                       # 属性测试（hypothesis）

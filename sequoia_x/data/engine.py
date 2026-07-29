@@ -1,6 +1,7 @@
-"""数据引擎模块：负责 SQLite 行情数据存储与 baostock 增量同步。"""
+"""数据引擎模块：负责 SQLite 行情数据与财务因子存储同步。"""
 
 import sqlite3
+from datetime import date
 from pathlib import Path
 
 import pandas as pd
@@ -36,6 +37,32 @@ CREATE TABLE IF NOT EXISTS stock_basic (
     name       TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
+"""
+
+_CREATE_FINANCIAL_FACTORS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS financial_factors (
+    symbol                TEXT NOT NULL,
+    report_date           TEXT NOT NULL,
+    announcement_date     TEXT,
+    eps                   REAL,
+    bps                   REAL,
+    roe                   REAL,
+    pe_dynamic            REAL,
+    pb                    REAL,
+    revenue               REAL,
+    net_profit            REAL,
+    revenue_yoy           REAL,
+    net_profit_yoy        REAL,
+    operating_cashflow_ps REAL,
+    gross_margin          REAL,
+    updated_at            TEXT NOT NULL,
+    PRIMARY KEY (symbol, report_date)
+);
+"""
+
+_CREATE_FINANCIAL_FACTORS_INDEX_SQL = """
+CREATE INDEX IF NOT EXISTS idx_financial_symbol_report
+ON financial_factors (symbol, report_date);
 """
 
 
@@ -113,6 +140,8 @@ class DataEngine:
             conn.execute(_CREATE_TABLE_SQL)
             conn.execute(_CREATE_INDEX_SQL)
             conn.execute(_CREATE_STOCK_BASIC_TABLE_SQL)
+            conn.execute(_CREATE_FINANCIAL_FACTORS_TABLE_SQL)
+            conn.execute(_CREATE_FINANCIAL_FACTORS_INDEX_SQL)
             conn.commit()
         logger.info(f"数据库初始化完成：{self.db_path}")
 
@@ -156,11 +185,161 @@ class DataEngine:
             )
         return df
 
+    def get_latest_financial_factors(self, symbols: list[str]) -> pd.DataFrame:
+        """返回每只股票最新一期财务因子。"""
+        if not symbols:
+            return pd.DataFrame()
+
+        placeholders = ",".join("?" for _ in symbols)
+        query = f"""
+        SELECT f1.*
+        FROM financial_factors f1
+        WHERE f1.symbol IN ({placeholders})
+          AND f1.report_date = (
+              SELECT MAX(f2.report_date)
+              FROM financial_factors f2
+              WHERE f2.symbol = f1.symbol
+          )
+        """
+        with sqlite3.connect(self.db_path) as conn:
+            return pd.read_sql(query, conn, params=symbols)
+
     @staticmethod
     def _to_baostock_code(symbol: str) -> str:
         """将纯数字代码转为 baostock 格式：6/9开头 -> sh，其余 -> sz。"""
         prefix = "sh" if symbol.startswith(("6", "9")) else "sz"
         return f"{prefix}.{symbol}"
+
+    @staticmethod
+    def _latest_financial_report_date(as_of: date | None = None) -> str:
+        """推断全市场较完整可用的最近一期财报期。"""
+        as_of = as_of or date.today()
+        year = as_of.year
+        month = as_of.month
+        if 5 <= month <= 8:
+            return f"{year}0331"
+        if 9 <= month <= 10:
+            return f"{year}0630"
+        if 11 <= month <= 12:
+            return f"{year}0930"
+        return f"{year - 1}0930"
+
+    def sync_financial_factors(self, report_date: str | None = None) -> int:
+        """使用 AKShare 从东方财富同步某一期全市场财务因子。"""
+        import akshare as ak
+
+        target_date = report_date or self._latest_financial_report_date()
+        logger.info(f"开始同步财务因子，报告期：{target_date}")
+        raw = ak.stock_yjbb_em(date=target_date)
+        if raw.empty:
+            logger.warning(f"财务因子同步返回空结果：{target_date}")
+            return 0
+
+        rename_map = {
+            "股票代码": "symbol",
+            "最新公告日期": "announcement_date",
+            "公告日期": "announcement_date",
+            "每股收益": "eps",
+            "每股净资产": "bps",
+            "净资产收益率": "roe",
+            "营业总收入-营业总收入": "revenue",
+            "营业收入-营业收入": "revenue",
+            "净利润-净利润": "net_profit",
+            "营业总收入-同比增长": "revenue_yoy",
+            "营业收入-同比增长": "revenue_yoy",
+            "净利润-同比增长": "net_profit_yoy",
+            "每股经营现金流量": "operating_cashflow_ps",
+            "销售毛利率": "gross_margin",
+        }
+        selected_columns = [column for column in rename_map if column in raw.columns]
+        if "股票代码" not in selected_columns:
+            raise RuntimeError("AKShare 返回缺少 '股票代码' 列，无法写入财务因子表")
+
+        df = raw[selected_columns].rename(columns=rename_map).copy()
+        df["symbol"] = df["symbol"].astype(str).str.extract(r"(\d{6})")[0]
+        df["report_date"] = pd.Timestamp(target_date).strftime("%Y-%m-%d")
+        df["announcement_date"] = pd.to_datetime(
+            df.get("announcement_date"), errors="coerce"
+        ).dt.strftime("%Y-%m-%d")
+        df["updated_at"] = date.today().isoformat()
+
+        numeric_columns = [
+            "eps",
+            "bps",
+            "roe",
+            "revenue",
+            "net_profit",
+            "revenue_yoy",
+            "net_profit_yoy",
+            "operating_cashflow_ps",
+            "gross_margin",
+        ]
+        for column in numeric_columns:
+            if column not in df.columns:
+                df[column] = pd.NA
+            df[column] = pd.to_numeric(df[column], errors="coerce")
+
+        spot = ak.stock_zh_a_spot_em()
+        if not spot.empty and {"代码", "市盈率-动态", "市净率"}.issubset(spot.columns):
+            valuation = spot[["代码", "市盈率-动态", "市净率"]].copy()
+            valuation.columns = ["symbol", "pe_dynamic", "pb"]
+            valuation["symbol"] = valuation["symbol"].astype(str).str.extract(r"(\d{6})")[0]
+            valuation["pe_dynamic"] = pd.to_numeric(valuation["pe_dynamic"], errors="coerce")
+            valuation["pb"] = pd.to_numeric(valuation["pb"], errors="coerce")
+            df = df.merge(valuation, on="symbol", how="left")
+        else:
+            df["pe_dynamic"] = pd.NA
+            df["pb"] = pd.NA
+
+        df = df[
+            [
+                "symbol",
+                "report_date",
+                "announcement_date",
+                "eps",
+                "bps",
+                "roe",
+                "pe_dynamic",
+                "pb",
+                "revenue",
+                "net_profit",
+                "revenue_yoy",
+                "net_profit_yoy",
+                "operating_cashflow_ps",
+                "gross_margin",
+                "updated_at",
+            ]
+        ].dropna(subset=["symbol"])
+
+        records = list(df.itertuples(index=False, name=None))
+        with sqlite3.connect(self.db_path) as conn:
+            conn.executemany(
+                """
+                INSERT INTO financial_factors (
+                    symbol, report_date, announcement_date, eps, bps, roe,
+                    pe_dynamic, pb, revenue, net_profit, revenue_yoy, net_profit_yoy,
+                    operating_cashflow_ps, gross_margin, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(symbol, report_date) DO UPDATE SET
+                    announcement_date=excluded.announcement_date,
+                    eps=excluded.eps,
+                    bps=excluded.bps,
+                    roe=excluded.roe,
+                    pe_dynamic=excluded.pe_dynamic,
+                    pb=excluded.pb,
+                    revenue=excluded.revenue,
+                    net_profit=excluded.net_profit,
+                    revenue_yoy=excluded.revenue_yoy,
+                    net_profit_yoy=excluded.net_profit_yoy,
+                    operating_cashflow_ps=excluded.operating_cashflow_ps,
+                    gross_margin=excluded.gross_margin,
+                    updated_at=excluded.updated_at
+                """,
+                records,
+            )
+            conn.commit()
+        logger.info(f"财务因子同步完成，写入 {len(df)} 条记录")
+        return len(df)
 
     # ── 数据同步 ──
 

@@ -1,4 +1,4 @@
-"""基于持仓成本、趋势、波动率和量价状态生成下一交易日建议。"""
+"""基于持仓状态和多因子候选生成下一交易日建议。"""
 
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -6,6 +6,7 @@ from datetime import date, timedelta
 import pandas as pd
 
 from sequoia_x.data.engine import DataEngine
+from sequoia_x.strategy.low_price_multi_factor import LowPriceMultiFactorStrategy
 
 
 @dataclass(frozen=True)
@@ -20,11 +21,41 @@ class PortfolioAdvice:
     next_workday: str
 
 
+@dataclass(frozen=True)
+class PortfolioCandidate:
+    symbol: str
+    name: str
+    score: float
+    close: float
+    rank: int
+    is_focus: bool
+
+
+@dataclass(frozen=True)
+class PortfolioReplacement:
+    sell_symbol: str
+    sell_name: str
+    buy_symbol: str
+    buy_name: str
+    buy_rank: int
+    buy_score: float
+    current_return: float
+    next_workday: str
+
+
+@dataclass(frozen=True)
+class PortfolioAdviceReport:
+    advice: list[PortfolioAdvice]
+    candidates: list[PortfolioCandidate]
+    replacements: list[PortfolioReplacement]
+
+
 class PortfolioAdvisor:
     """透明规则策略；建议用于风险管理，不代表确定性买卖指令。"""
 
-    def __init__(self, engine: DataEngine) -> None:
+    def __init__(self, engine: DataEngine, strategy: LowPriceMultiFactorStrategy | None = None) -> None:
         self.engine = engine
+        self.strategy = strategy
 
     @staticmethod
     def _next_workday() -> str:
@@ -33,8 +64,85 @@ class PortfolioAdvisor:
             candidate += timedelta(days=1)
         return candidate.isoformat()
 
-    def advise(self, portfolio: pd.DataFrame) -> list[PortfolioAdvice]:
-        advice = []
+    def _build_candidates(self) -> list[PortfolioCandidate]:
+        if self.strategy is None:
+            return []
+        ranked = self.strategy.rank_candidates(limit=10)
+        if ranked.empty:
+            return []
+        from sequoia_x.portfolio.manager import PortfolioManager
+
+        names = self.engine.get_stock_names(ranked["symbol"].tolist())
+        candidates: list[PortfolioCandidate] = []
+        for _, row in ranked.iterrows():
+            realtime_quote = PortfolioManager._fetch_real_quote(str(row["symbol"]))
+            display_close = (
+                float(realtime_quote[0])
+                if realtime_quote is not None
+                else float(row["close"])
+            )
+            candidates.append(
+                PortfolioCandidate(
+                    symbol=str(row["symbol"]),
+                    name=names.get(str(row["symbol"]), str(row["symbol"])),
+                    score=float(row["score"]),
+                    close=display_close,
+                    rank=int(row["rank"]),
+                    is_focus=int(row["rank"]) <= 3,
+                )
+            )
+        return candidates
+
+    @staticmethod
+    def _holding_return(row: pd.Series) -> float:
+        shares = float(pd.to_numeric(pd.Series([row["shares"]]), errors="coerce").fillna(0).iloc[0])
+        close = pd.to_numeric(pd.Series([row["latest_close"]]), errors="coerce").iloc[0]
+        cost = pd.to_numeric(pd.Series([row["cost_price"]]), errors="coerce").iloc[0]
+        if shares <= 0 or pd.isna(close) or pd.isna(cost) or float(cost) <= 0:
+            return 0.0
+        return float(close) / float(cost) - 1
+
+    def _build_replacements(
+        self,
+        portfolio: pd.DataFrame,
+        candidates: list[PortfolioCandidate],
+        next_workday: str,
+    ) -> list[PortfolioReplacement]:
+        holdings = portfolio[pd.to_numeric(portfolio["shares"], errors="coerce").fillna(0) > 0].copy()
+        if holdings.empty or not candidates:
+            return []
+
+        holdings["holding_return_value"] = holdings.apply(self._holding_return, axis=1)
+        ranked_holdings = holdings.sort_values(
+            ["total_return_rate", "holding_return_value"],
+            ascending=[True, True],
+            na_position="first",
+        )
+        candidate_pool = [candidate for candidate in candidates if candidate.rank <= 3]
+        replacements: list[PortfolioReplacement] = []
+        used_buys: set[str] = set()
+        for (_, row), candidate in zip(ranked_holdings.iterrows(), candidate_pool, strict=False):
+            if str(row["symbol"]) == candidate.symbol:
+                continue
+            if candidate.symbol in used_buys:
+                continue
+            replacements.append(
+                PortfolioReplacement(
+                    sell_symbol=str(row["symbol"]),
+                    sell_name=str(row["name"]),
+                    buy_symbol=candidate.symbol,
+                    buy_name=candidate.name,
+                    buy_rank=candidate.rank,
+                    buy_score=candidate.score,
+                    current_return=self._holding_return(row),
+                    next_workday=next_workday,
+                )
+            )
+            used_buys.add(candidate.symbol)
+        return replacements
+
+    def advise(self, portfolio: pd.DataFrame) -> PortfolioAdviceReport:
+        advice: list[PortfolioAdvice] = []
         next_workday = self._next_workday()
         for _, row in portfolio.iterrows():
             symbol = row["symbol"]
@@ -99,4 +207,6 @@ class PortfolioAdvisor:
                     next_workday=next_workday,
                 )
             )
-        return advice
+        candidates = self._build_candidates()
+        replacements = self._build_replacements(portfolio, candidates, next_workday)
+        return PortfolioAdviceReport(advice=advice, candidates=candidates, replacements=replacements)

@@ -30,6 +30,7 @@ from sequoia_x.strategy.base import BaseStrategy
 from sequoia_x.strategy.high_tight_flag import HighTightFlagStrategy
 from sequoia_x.strategy.limit_up_shakeout import LimitUpShakeoutStrategy
 from sequoia_x.strategy.ma_volume import MaVolumeStrategy
+from sequoia_x.strategy.low_price_multi_factor import LowPriceMultiFactorStrategy
 from sequoia_x.strategy.turtle_trade import TurtleTradeStrategy
 from sequoia_x.strategy.uptrend_limit_down import UptrendLimitDownStrategy
 from sequoia_x.strategy.rps_breakout import RpsBreakoutStrategy
@@ -148,10 +149,11 @@ def _run_portfolio(
     console.print(table)
     console.print(f"CSV：{settings.portfolio_csv_path}")
 
-    advice = PortfolioAdvisor(engine).advise(portfolio)
+    factor_strategy = LowPriceMultiFactorStrategy(engine=engine, settings=settings)
+    advice_report = PortfolioAdvisor(engine, strategy=factor_strategy).advise(portfolio)
     notifier = FeishuNotifier(settings)
     notifier.send_portfolio(portfolio)
-    notifier.send_portfolio_advice(advice)
+    notifier.send_portfolio_advice(advice_report)
 
 
 def main() -> None:
@@ -172,6 +174,13 @@ def main() -> None:
         "--portfolio",
         action="store_true",
         help="刷新本地自选与持仓，计算收益并推送飞书操作建议",
+    )
+    mode_group.add_argument(
+        "--sync-financials",
+        nargs="?",
+        const="latest",
+        metavar="REPORT_DATE",
+        help="同步某一期财务因子，例如 --sync-financials 20260331；省略日期则按当前时间推断最近完整报告期",
     )
     parser.add_argument(
         "--sell-position",
@@ -234,6 +243,12 @@ def main() -> None:
             _run_portfolio(engine, settings)
             return
 
+        if args.sync_financials is not None:
+            report_date = None if args.sync_financials == "latest" else args.sync_financials
+            count = engine.sync_financial_factors(report_date=report_date)
+            logger.info(f"财务因子同步完成：{count} 条")
+            return
+
         if (args.portfolio or args.set_watchlist or args.set_position or args.sell_position
                 or args.remove_position):
             _run_portfolio(
@@ -261,6 +276,7 @@ def main() -> None:
             UptrendLimitDownStrategy(engine=engine, settings=settings),
             RpsBreakoutStrategy(engine=engine, settings=settings),
             PrivatePlacementStrategy(engine=engine, settings=settings),
+            LowPriceMultiFactorStrategy(engine=engine, settings=settings),
         ]
 
         notifier = FeishuNotifier(settings)

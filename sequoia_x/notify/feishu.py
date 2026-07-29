@@ -245,8 +245,11 @@ class FeishuNotifier:
             },
         }
 
-    def _build_portfolio_advice_card(self, advice: list) -> dict:
+    def _build_portfolio_advice_card(self, report) -> dict:
         """构建下一工作日持仓与自选操作建议卡片。"""
+        advice = report.advice
+        candidates = report.candidates
+        replacements = report.replacements
         next_workday = advice[0].next_workday if advice else "未知"
         rows = []
         for item in advice:
@@ -255,6 +258,26 @@ class FeishuNotifier:
                 f"[{item.name} {item.symbol}](https://xueqiu.com/S/{xq_code})｜"
                 f"**{item.action}**｜风险 {item.risk}\n"
                 f"参考价 {item.reference_price:.3f}｜{item.reason}"
+            )
+
+        replacement_rows = []
+        for item in replacements:
+            sell_code = self._to_xueqiu_code(item.sell_symbol)
+            buy_code = self._to_xueqiu_code(item.buy_symbol)
+            replacement_rows.append(
+                f"卖出 [{item.sell_name} {item.sell_symbol}](https://xueqiu.com/S/{sell_code}) "
+                f"→ 买入 **[{item.buy_name} {item.buy_symbol}](https://xueqiu.com/S/{buy_code})** "
+                f"(候选第{item.buy_rank}，分数 {item.buy_score:.2f})\n"
+                f"当前持仓收益 {item.current_return:+.2%}"
+            )
+
+        candidate_rows = []
+        for item in candidates:
+            xq_code = self._to_xueqiu_code(item.symbol)
+            marker = "⭐" if item.is_focus else "•"
+            candidate_rows.append(
+                f"{marker} [{item.name} {item.symbol}](https://xueqiu.com/S/{xq_code})｜"
+                f"第{item.rank}名｜分数 {item.score:.2f}｜收盘 {item.close:.2f}"
             )
         return {
             "msg_type": "interactive",
@@ -268,6 +291,28 @@ class FeishuNotifier:
                 },
                 "elements": [
                     {"tag": "div", "text": {"tag": "lark_md", "content": "\n\n".join(rows)}},
+                    {"tag": "hr"},
+                    {
+                        "tag": "div",
+                        "text": {
+                            "tag": "lark_md",
+                            "content": (
+                                "**重点替换建议（前3候选优先）：**\n"
+                                + ("\n\n".join(replacement_rows) if replacement_rows else "暂无明确替换建议")
+                            ),
+                        },
+                    },
+                    {"tag": "hr"},
+                    {
+                        "tag": "div",
+                        "text": {
+                            "tag": "lark_md",
+                            "content": (
+                                "**低价多因子前10候选（⭐为前3重点）：**\n"
+                                + ("\n".join(candidate_rows) if candidate_rows else "暂无候选")
+                            ),
+                        },
+                    },
                     {
                         "tag": "note",
                         "elements": [
@@ -374,15 +419,15 @@ class FeishuNotifier:
 
     def send_portfolio_advice(
         self,
-        advice: list,
+        report,
         webhook_key: str = "portfolio",
     ) -> None:
         """推送下一工作日规则化操作建议。"""
-        if not advice:
+        if not report or not report.advice:
             logger.info("无组合操作建议，跳过飞书推送")
             return
         self._post_payload(
-            self._build_portfolio_advice_card(advice),
+            self._build_portfolio_advice_card(report),
             webhook_key,
             f"组合操作建议飞书推送成功 [{webhook_key}]",
         )
