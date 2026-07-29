@@ -1,0 +1,33 @@
+tests/test_data_engine.py
+  s_349c96c3268bb6::t_9e5f10ca51f061 141-168
+sequoia_x/core/config.py
+  s_349c96c3268bb6::t_9e5f10ca51f061 10
+README.md
+  s_349c96c3268bb6::t_9e5f10ca51f061 32-35
+sequoia_x/data/engine.py
+  s_349c96c3268bb6::t_9e5f10ca51f061 68-77,84,95,98-139,392,401,515,524
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "13138cc32237219c0368887dfe726f39b9377cb0",
+  "prompts": {},
+  "logical_commit_id": "13138cc32237219c0368887dfe726f39b9377cb0",
+  "humans": {
+    "h_dc6c9c0bce9380": {
+      "author": "yeyongjun <yeyongjun@bigo.sg>"
+    }
+  },
+  "sessions": {
+    "s_349c96c3268bb6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fac10-5bc9-7c81-ae06-7074ed4558ec",
+        "model": "gpt-5.4"
+      },
+      "human_author": "yeyongjun <yeyongjun@bigo.sg>",
+      "total_additions": 247,
+      "total_deletions": 105
+    }
+  }
+}
