@@ -19,6 +19,7 @@ def test_intraday_monitor_reads_snapshot_and_deduplicates_alerts() -> None:
             portfolio_csv_path=str(root / "portfolio.csv"),
             comprehensive_snapshot_path=str(root / "snapshot.json"),
             intraday_alert_state_path=str(root / "alerts.json"),
+            strategy_selection_path=str(root / "selections.json"),
             feishu_webhook_url="https://example.com/hook",
         )
         engine = DataEngine(settings)
@@ -65,17 +66,29 @@ def test_intraday_monitor_reads_snapshot_and_deduplicates_alerts() -> None:
             ),
             encoding="utf-8",
         )
+        Path(settings.strategy_selection_path).write_text(
+            json.dumps({"strategies": {"OtherStrategy": ["000002"]}}), encoding="utf-8"
+        )
         quote = IntradayQuote(
             symbol="000001", price=9.4, previous_close=10.0, open=10.0, high=10.1,
             low=9.3, volume=900_000, amount=8_550_000, quote_time="2026-07-30T10:30:00",
         )
-        monitor = IntradayMonitor(engine, settings, quote_fetcher=lambda _: quote)
+        monitor = IntradayMonitor(
+            engine,
+            settings,
+            quote_fetcher=lambda symbol: quote if symbol == "000001" else None,
+        )
 
         first = monitor.run()
+        sources = monitor.latest_universe_sources
+        prices = monitor.latest_prices
         second = monitor.run()
 
     assert {item.alert_type for item in first} >= {"硬止损", "放量下跌"}
     assert second == []
+    assert sources["000001"] == {"持仓", "自选", "策略"}
+    assert sources["000002"] == {"策略"}
+    assert prices["000001"] == 9.4
 
 
 def test_elapsed_volume_ratio_covers_lunch_and_close() -> None:

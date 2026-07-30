@@ -8,11 +8,13 @@
 """
 
 import argparse
+import json
 import sys
 from dotenv import load_dotenv
 load_dotenv()
 
 from datetime import date
+from pathlib import Path
 
 import socket
 socket.setdefaulttimeout(10.0)
@@ -28,6 +30,7 @@ from sequoia_x.notify.feishu import FeishuNotifier
 from sequoia_x.monitor import IntradayMonitor
 from sequoia_x.portfolio import PortfolioAdvisor, PortfolioManager
 from sequoia_x.prediction import EnsemblePredictor
+from sequoia_x.simulation import PaperTradingManager
 from sequoia_x.strategy.base import BaseStrategy
 from sequoia_x.strategy.high_tight_flag import HighTightFlagStrategy
 from sequoia_x.strategy.limit_up_shakeout import LimitUpShakeoutStrategy
@@ -161,24 +164,47 @@ def _run_portfolio(
 
 def _run_intraday_monitor(engine: DataEngine, settings) -> None:
     """执行独立盘中监控，不同步、写入或修改正式日K。"""
-    alerts = IntradayMonitor(engine, settings).run()
+    monitor = IntradayMonitor(engine, settings)
+    alerts = monitor.run()
+    simulator = PaperTradingManager(
+        settings.paper_trading_db_path,
+        initial_capital=settings.paper_initial_capital,
+    )
+    simulator.sync_universe(
+        monitor.latest_universe_sources,
+        monitor.latest_names,
+        monitor.latest_prices,
+    )
+    trades = simulator.apply_alerts(alerts)
     console = Console()
-    if not alerts:
+    if alerts:
+        table = Table(title="盘中实时预警")
+        for column in ("级别", "股票", "类型", "实时价", "说明"):
+            table.add_column(column)
+        for item in alerts:
+            table.add_row(
+                item.level, f"{item.name} {item.symbol}", item.alert_type,
+                f"{item.price:.3f}", item.message,
+            )
+        console.print(table)
+        FeishuNotifier(settings).send_intraday_alerts(alerts)
+    else:
         console.print("盘中监控完成：暂无新预警")
-        return
-    table = Table(title="盘中实时预警")
-    for column in ("级别", "股票", "类型", "实时价", "说明"):
-        table.add_column(column)
-    for item in alerts:
-        table.add_row(
-            item.level,
-            f"{item.name} {item.symbol}",
-            item.alert_type,
-            f"{item.price:.3f}",
-            item.message,
-        )
-    console.print(table)
-    FeishuNotifier(settings).send_intraday_alerts(alerts)
+
+    if trades:
+        trade_table = Table(title="本次模拟交易")
+        for column in ("股票", "操作", "股数", "价格", "金额", "原因"):
+            trade_table.add_column(column)
+        for trade in trades:
+            trade_table.add_row(
+                f"{trade.name} {trade.symbol}", trade.action, str(trade.shares),
+                f"{trade.price:.3f}", f"{trade.amount:,.2f}", trade.reason,
+            )
+        console.print(trade_table)
+    console.print(
+        f"模拟账户：{len(simulator.accounts())} 只股票，每只初始本金 "
+        f"{settings.paper_initial_capital:,.0f} 元；数据：{settings.paper_trading_db_path}"
+    )
 
 
 def main() -> None:
@@ -324,11 +350,13 @@ def main() -> None:
         logger.info(f"当前策略使用的数据日期：{data_date or '未知'}")
 
         # 5. 遍历策略，有结果则推送至对应机器人
+        strategy_selections: dict[str, list[str]] = {}
         for strategy in strategies:
             strategy_name = type(strategy).__name__
             logger.info(f"执行策略：{strategy_name}")
 
             selected: list[str] = strategy.run()
+            strategy_selections[strategy_name] = selected
             logger.info(f"{strategy_name} 选出 {len(selected)} 只股票")
 
             if selected:
@@ -342,6 +370,17 @@ def main() -> None:
                 )
             else:
                 logger.info(f"{strategy_name} 无选股结果，跳过推送")
+
+        selection_path = Path(settings.strategy_selection_path)
+        selection_path.parent.mkdir(parents=True, exist_ok=True)
+        selection_path.write_text(
+            json.dumps(
+                {"data_date": data_date, "strategies": strategy_selections},
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
 
     except Exception:
         try:

@@ -60,6 +60,9 @@ class IntradayMonitor:
         self.engine = engine
         self.settings = settings
         self.quote_fetcher = quote_fetcher or self.fetch_quote
+        self.latest_universe_sources: dict[str, set[str]] = {}
+        self.latest_names: dict[str, str] = {}
+        self.latest_prices: dict[str, float] = {}
 
     @staticmethod
     def fetch_quote(symbol: str) -> IntradayQuote | None:
@@ -101,6 +104,21 @@ class IntradayMonitor:
         if not path.exists():
             return pd.DataFrame()
         return pd.read_csv(path, dtype={"symbol": str})
+
+    def _load_strategy_symbols(self) -> set[str]:
+        path = Path(self.settings.strategy_selection_path)
+        if not path.exists():
+            return set()
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            return {
+                str(symbol).zfill(6)
+                for symbols in payload.get("strategies", {}).values()
+                for symbol in symbols
+            }
+        except (json.JSONDecodeError, OSError, AttributeError, TypeError):
+            logger.warning("策略选股池读取失败，本次仅监控综合趋势快照与组合")
+            return set()
 
     @staticmethod
     def _elapsed_volume_ratio(quote_time: datetime) -> float:
@@ -162,13 +180,24 @@ class IntradayMonitor:
             if float(item.get("score", 0)) >= 65 or item.get("entry_signal") != "等待确认"
         }
         portfolio = self._load_portfolio()
+        strategy_symbols = self._load_strategy_symbols()
         holdings, costs = self._portfolio_maps(portfolio)
         watchlist = set()
         if not portfolio.empty:
             flags = portfolio.get("is_watchlist", False).astype(str).str.lower().isin({"true", "1"})
             watchlist = set(portfolio.loc[flags, "symbol"].astype(str).str.zfill(6))
-        universe = sorted(set(assessments) | holdings | watchlist)
+        universe = sorted(set(assessments) | strategy_symbols | holdings | watchlist)
         names = self.engine.get_stock_names(universe)
+        self.latest_universe_sources = {
+            symbol: (
+                ({"策略"} if symbol in assessments or symbol in strategy_symbols else set())
+                | ({"持仓"} if symbol in holdings else set())
+                | ({"自选"} if symbol in watchlist else set())
+            )
+            for symbol in universe
+        }
+        self.latest_names = names
+        self.latest_prices = {}
         alerts: list[IntradayAlert] = []
         quote_dates: set[str] = set()
 
@@ -176,6 +205,7 @@ class IntradayMonitor:
             quote = self.quote_fetcher(symbol)
             if quote is None:
                 continue
+            self.latest_prices[symbol] = quote.price
             quote_dt = datetime.fromisoformat(quote.quote_time)
             quote_dates.add(quote_dt.date().isoformat())
             assessment = assessments.get(symbol, {})
@@ -213,6 +243,18 @@ class IntradayMonitor:
                 )
             if score >= 65 and quote.price >= quote.high * 0.995 and projected_ratio >= 1.5:
                 add("中", "盘中突破候选", f"日线评分 {score:.1f}，预计全天量比 {projected_ratio:.2f}")
+            if (
+                symbol not in assessments
+                and symbol in (strategy_symbols | watchlist)
+                and quote.change_pct >= 0.02
+                and quote.price >= quote.vwap
+                and projected_ratio >= 1.3
+            ):
+                add(
+                    "中",
+                    "盘中走强",
+                    f"自选/策略标的涨幅 {quote.change_pct:+.1%}，预计全天量比 {projected_ratio:.2f}",
+                )
             is_tail = quote_dt.hour == 14 and quote_dt.minute >= 45
             if is_tail and entry != "等待确认" and quote.price >= quote.vwap:
                 add("中", "尾盘买点确认", f"前一日信号 {entry}，实时价仍在VWAP上方")
