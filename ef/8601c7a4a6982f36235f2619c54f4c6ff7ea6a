@@ -1,0 +1,50 @@
+main.py
+  s_c259d37ef20a0d::t_3e4f05a0d6c1ad 28,162-183,202-206,285-288
+  s_c259d37ef20a0d::t_b65be695951320 40,311
+sequoia_x/core/config.py
+  s_c259d37ef20a0d::t_3e4f05a0d6c1ad 10-11
+sequoia_x/strategy/comprehensive_trend.py
+  s_c259d37ef20a0d::t_3e4f05a0d6c1ad 3-6,362,373-391
+  s_c259d37ef20a0d::t_b65be695951320 1-2,7-361,363-372
+sequoia_x/monitor/__init__.py
+  s_c259d37ef20a0d::t_3e4f05a0d6c1ad 1-5
+sequoia_x/notify/feishu.py
+  s_c259d37ef20a0d::t_348b3defd03090 5,481-482
+  s_c259d37ef20a0d::t_82a8a948435e44 167-209,447-457
+tests/test_intraday_monitor.py
+  s_c259d37ef20a0d::t_82a8a948435e44 1-86
+.env.example
+  s_c259d37ef20a0d::t_3e4f05a0d6c1ad 10-13,28
+README.md
+  s_c259d37ef20a0d::t_b65be695951320 88
+  s_c259d37ef20a0d::t_82a8a948435e44 27,72-80
+  s_c259d37ef20a0d::t_cf18dd802380de 81
+sequoia_x/monitor/intraday.py
+  s_c259d37ef20a0d::t_3e4f05a0d6c1ad 1-226
+tests/test_comprehensive_trend.py
+  s_c259d37ef20a0d::t_b65be695951320 1-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "ef8601c7a4a6982f36235f2619c54f4c6ff7ea6a",
+  "prompts": {},
+  "logical_commit_id": "ef8601c7a4a6982f36235f2619c54f4c6ff7ea6a",
+  "humans": {
+    "h_dc6c9c0bce9380": {
+      "author": "yeyongjun <yeyongjun@bigo.sg>"
+    }
+  },
+  "sessions": {
+    "s_c259d37ef20a0d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fb214-db54-75d1-8626-daf49bc63408",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "yeyongjun <yeyongjun@bigo.sg>",
+      "total_additions": 884,
+      "total_deletions": 1
+    }
+  }
+}
