@@ -79,6 +79,18 @@ Brier 分数。预测结果是统计概率，不构成收益保证或投资建�
 建议交易日收盘后先运行一次 `main.py` 生成新快照，再通过定时任务在 09:40、10:30、11:20、
 13:30、14:30、14:50 分别执行 `main.py --intraday`。
 
+项目提供 `schedule_strategy.sh` 管理上述调度，并在每个工作日19:15执行完整日K策略：
+
+```bash
+chmod +x schedule_strategy.sh
+./schedule_strategy.sh install  # 安装或更新项目专属crontab
+./schedule_strategy.sh list     # 查看任务
+./schedule_strategy.sh remove   # 只移除本项目任务
+```
+
+日志分别写入 `logs/intraday.log` 和 `logs/daily.log`。脚本使用 `Asia/Shanghai` 时区，并保留
+用户crontab中的其他任务。周一至周五规则不自动识别A股法定休市日。
+
 ---
 
 ## 内置策略 | Strategies
