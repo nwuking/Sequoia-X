@@ -2,6 +2,7 @@
 
 import json
 from datetime import date
+from types import SimpleNamespace
 
 import pandas as pd
 import requests
@@ -156,6 +157,49 @@ class FeishuNotifier:
                             {
                                 "tag": "plain_text",
                                 "content": "统计概率不代表收益保证，不构成投资建议。",
+                            }
+                        ],
+                    },
+                ],
+            },
+        }
+
+    def _build_intraday_alert_card(self, alerts: list) -> dict:
+        """构建盘中风险与尾盘确认卡片。"""
+        rows = []
+        for item in alerts[:50]:
+            xq_code = self._to_xueqiu_code(item.symbol)
+            rows.append(
+                f"**[{item.level}]** "
+                f"[{item.name} {item.symbol}](https://xueqiu.com/S/{xq_code})｜"
+                f"{item.alert_type}｜实时价 {item.price:.3f}\n{item.message}"
+            )
+        if len(alerts) > 50:
+            rows.append(f"其余 {len(alerts) - 50} 条预警因消息长度限制未展示")
+        quote_time = max((item.quote_time for item in alerts), default="未知")
+        return {
+            "msg_type": "interactive",
+            "card": {
+                "header": {
+                    "title": {"tag": "plain_text", "content": "⚠️ Sequoia-X 盘中实时监控"},
+                    "template": "red",
+                },
+                "elements": [
+                    {
+                        "tag": "div",
+                        "text": {
+                            "tag": "lark_md",
+                            "content": f"**行情时间：** {quote_time}\n**新预警：** {len(alerts)} 条",
+                        },
+                    },
+                    {"tag": "hr"},
+                    {"tag": "div", "text": {"tag": "lark_md", "content": "\n\n".join(rows)}},
+                    {
+                        "tag": "note",
+                        "elements": [
+                            {
+                                "tag": "plain_text",
+                                "content": "盘中信号仅用于风险预警和尾盘确认；正式趋势以收盘日K为准。",
                             }
                         ],
                     },
@@ -402,6 +446,17 @@ class FeishuNotifier:
             f"预测结果飞书推送成功 [{webhook_key}]，共 {len(results)} 只股票",
         )
 
+    def send_intraday_alerts(self, alerts: list, webhook_key: str = "intraday") -> None:
+        """推送盘中新预警；同日去重由 IntradayMonitor 负责。"""
+        if not alerts:
+            logger.info("无盘中新预警，跳过飞书推送")
+            return
+        self._post_payload(
+            self._build_intraday_alert_card(alerts),
+            webhook_key,
+            f"盘中预警飞书推送成功 [{webhook_key}]，共 {len(alerts)} 条",
+        )
+
     def send_portfolio(
         self,
         portfolio: pd.DataFrame,
@@ -423,6 +478,8 @@ class FeishuNotifier:
         webhook_key: str = "portfolio",
     ) -> None:
         """推送下一工作日规则化操作建议。"""
+        if isinstance(report, list):
+            report = SimpleNamespace(advice=report, candidates=[], replacements=[])
         if not report or not report.advice:
             logger.info("无组合操作建议，跳过飞书推送")
             return

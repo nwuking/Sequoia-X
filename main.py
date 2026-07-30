@@ -25,6 +25,7 @@ from sequoia_x.core.config import get_settings
 from sequoia_x.core.logger import get_logger
 from sequoia_x.data.engine import DataEngine
 from sequoia_x.notify.feishu import FeishuNotifier
+from sequoia_x.monitor import IntradayMonitor
 from sequoia_x.portfolio import PortfolioAdvisor, PortfolioManager
 from sequoia_x.prediction import EnsemblePredictor
 from sequoia_x.strategy.base import BaseStrategy
@@ -36,6 +37,7 @@ from sequoia_x.strategy.turtle_trade import TurtleTradeStrategy
 from sequoia_x.strategy.uptrend_limit_down import UptrendLimitDownStrategy
 from sequoia_x.strategy.rps_breakout import RpsBreakoutStrategy
 from sequoia_x.strategy.private_placement import PrivatePlacementStrategy
+from sequoia_x.strategy.comprehensive_trend import ComprehensiveTrendStrategy
 
 
 def _sync_latest(engine: DataEngine, force: bool, logger) -> None:
@@ -157,6 +159,28 @@ def _run_portfolio(
     notifier.send_portfolio_advice(advice_report)
 
 
+def _run_intraday_monitor(engine: DataEngine, settings) -> None:
+    """执行独立盘中监控，不同步、写入或修改正式日K。"""
+    alerts = IntradayMonitor(engine, settings).run()
+    console = Console()
+    if not alerts:
+        console.print("盘中监控完成：暂无新预警")
+        return
+    table = Table(title="盘中实时预警")
+    for column in ("级别", "股票", "类型", "实时价", "说明"):
+        table.add_column(column)
+    for item in alerts:
+        table.add_row(
+            item.level,
+            f"{item.name} {item.symbol}",
+            item.alert_type,
+            f"{item.price:.3f}",
+            item.message,
+        )
+    console.print(table)
+    FeishuNotifier(settings).send_intraday_alerts(alerts)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Sequoia-X V2 选股系统")
     mode_group = parser.add_mutually_exclusive_group()
@@ -175,6 +199,11 @@ def main() -> None:
         "--portfolio",
         action="store_true",
         help="刷新本地自选与持仓，计算收益并推送飞书操作建议",
+    )
+    mode_group.add_argument(
+        "--intraday",
+        action="store_true",
+        help="盘中监控：读取前一日综合趋势快照，检查持仓、自选和高分候选",
     )
     mode_group.add_argument(
         "--sync-financials",
@@ -255,6 +284,10 @@ def main() -> None:
             logger.info(f"财务因子同步完成：{count} 条")
             return
 
+        if args.intraday:
+            _run_intraday_monitor(engine, settings)
+            return
+
         if (args.portfolio or args.set_watchlist or args.set_position or args.sell_position
                 or args.remove_position):
             _run_portfolio(
@@ -275,6 +308,7 @@ def main() -> None:
 
         # 4. 策略列表（新增策略在此追加即可）
         strategies: list[BaseStrategy] = [
+            ComprehensiveTrendStrategy(engine=engine, settings=settings),
             MaVolumeStrategy(engine=engine, settings=settings),
             TurtleTradeStrategy(engine=engine, settings=settings),
             HighTightFlagStrategy(engine=engine, settings=settings),

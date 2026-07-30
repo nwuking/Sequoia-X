@@ -24,6 +24,7 @@ Sequoia-X V2 是面向 A 股市场的量化选股系统，基于现代 Python �
 .venv/bin/python main.py --sync-financials 20260331  # 同步某一期全市场财务因子
 .venv/bin/python main.py --predict 600519 000001 --horizon 5  # 指定股票预测未来5个交易日
 .venv/bin/python main.py --portfolio    # 刷新持仓收益并推送下一工作日操作观察
+.venv/bin/python main.py --intraday     # 盘中监控持仓、自选和前一日综合趋势候选
 ```
 
 默认情况下，增量同步失败会终止程序，避免使用陈旧或不完整的数据推送。
@@ -68,12 +69,23 @@ Brier 分数。预测结果是统计概率，不构成收益保证或投资建�
 收益率、市值和浮动盈亏，并向 `STRATEGY_WEBHOOK_PORTFOLIO` 对应机器人推送持仓快照与
 下一工作日规则化操作观察；未配置专属机器人时使用默认 Webhook。
 
+### 日线决策与盘中监控
+
+`ComprehensiveTrendStrategy` 只在收盘完整日K上生成正式趋势、评分、买点和止损价，并保存到
+`data/comprehensive_trend_latest.json`。`--intraday` 只读取该快照、组合CSV和实时行情，不执行行情
+同步，也不会把未收盘数据写入正式日K表。盘中模块监控硬止损、持仓亏损、预计放量下跌、突破候选
+和14:45后的尾盘买点确认；同一股票同一类型的预警每天只推送一次。
+
+建议交易日收盘后先运行一次 `main.py` 生成新快照，再通过定时任务在 09:40、10:30、11:20、
+13:30、14:30、14:50 分别执行 `main.py --intraday`。
+
 ---
 
 ## 内置策略 | Strategies
 
 | 策略 | 说明 |
 |---|---|
+| **ComprehensiveTrend** | 综合趋势系统：识别主升浪、阴跌、吸筹/洗盘/撤离候选、下跌反弹，并按市场环境、趋势、量价、MACD/RSI/OBV、相对强度和风险项评分；仅输出已触发平台突破、缩量回踩或趋势恢复买点的标的 |
 | **TurtleTrade** | 海龟突破：20日新高 + 成交额过亿 + 阳线防诱多，按涨幅排序 |
 | **MaVolume** | 均线+放量突破 |
 | **HighTightFlag** | 高而窄的旗形整理突破 |
