@@ -1,0 +1,51 @@
+sequoia_x/core/config.py
+  s_e93006a4c920c6::t_d26f158940e039 11
+  s_e93006a4c920c6::t_f8f0c339330645 13-14
+sequoia_x/simulation/__init__.py
+  s_e93006a4c920c6::t_f8f0c339330645 1-5
+README.md
+  s_e93006a4c920c6::t_80067436333f00 80
+  s_e93006a4c920c6::t_aea4098a45ca51 81-84,86
+  s_e93006a4c920c6::t_d26f158940e039 79,85
+main.py
+  s_e93006a4c920c6::t_f8f0c339330645 33,167-178,180-191,193-207
+  s_e93006a4c920c6::t_d26f158940e039 11,17,353,359,373-383
+tests/test_paper_trading.py
+  s_e93006a4c920c6::t_741d1d922c21e3 53-54
+  s_e93006a4c920c6::t_aea4098a45ca51 1-52,55-77
+  s_e93006a4c920c6::t_80067436333f00 78-91
+sequoia_x/simulation/paper.py
+  s_e93006a4c920c6::t_f8f0c339330645 1-158,160-239
+  s_e93006a4c920c6::t_80067436333f00 159
+sequoia_x/monitor/intraday.py
+  s_e93006a4c920c6::t_80067436333f00 246-257
+  s_e93006a4c920c6::t_d26f158940e039 108-122,183,189,193
+  s_e93006a4c920c6::t_f8f0c339330645 63-65,191-192,194-200,208
+tests/test_intraday_monitor.py
+  s_e93006a4c920c6::t_aea4098a45ca51 83-84,89,91
+  s_e93006a4c920c6::t_d26f158940e039 22,69-71,75-79,90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "6e88342a1a8d0420761bc5890fb021dbfe747dac",
+  "prompts": {},
+  "logical_commit_id": "6e88342a1a8d0420761bc5890fb021dbfe747dac",
+  "humans": {
+    "h_dc6c9c0bce9380": {
+      "author": "yeyongjun <yeyongjun@bigo.sg>"
+    }
+  },
+  "sessions": {
+    "s_e93006a4c920c6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fb28a-9e4c-7c11-be8a-a5fa31b665d5",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "yeyongjun <yeyongjun@bigo.sg>",
+      "total_additions": 464,
+      "total_deletions": 24
+    }
+  }
+}
