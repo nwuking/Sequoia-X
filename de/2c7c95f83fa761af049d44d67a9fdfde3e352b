@@ -1,0 +1,31 @@
+README.md
+  s_c259d37ef20a0d::t_da5ca2ec0811c1 82-93
+schedule_strategy.sh
+  s_c259d37ef20a0d::t_68521aaca0d65b 91,101
+  h_dc6c9c0bce9380 5-13
+  s_c259d37ef20a0d::t_da5ca2ec0811c1 1-4,14-90,92-100,102-113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "de2c7c95f83fa761af049d44d67a9fdfde3e352b",
+  "prompts": {},
+  "logical_commit_id": "de2c7c95f83fa761af049d44d67a9fdfde3e352b",
+  "humans": {
+    "h_dc6c9c0bce9380": {
+      "author": "yeyongjun <yeyongjun@bigo.sg>"
+    }
+  },
+  "sessions": {
+    "s_c259d37ef20a0d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fb214-db54-75d1-8626-daf49bc63408",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "yeyongjun <yeyongjun@bigo.sg>",
+      "total_additions": 118,
+      "total_deletions": 2
+    }
+  }
+}
