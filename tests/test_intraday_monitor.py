@@ -67,7 +67,13 @@ def test_intraday_monitor_reads_snapshot_and_deduplicates_alerts() -> None:
             encoding="utf-8",
         )
         Path(settings.strategy_selection_path).write_text(
-            json.dumps({"strategies": {"OtherStrategy": ["000002"]}}), encoding="utf-8"
+            json.dumps(
+                {
+                    "strategies": {"OtherStrategy": ["000002"]},
+                    "combined": {"focus": ["000003"]},
+                }
+            ),
+            encoding="utf-8",
         )
         quote = IntradayQuote(
             symbol="000001", price=9.4, previous_close=10.0, open=10.0, high=10.1,
@@ -88,6 +94,7 @@ def test_intraday_monitor_reads_snapshot_and_deduplicates_alerts() -> None:
     assert second == []
     assert sources["000001"] == {"持仓", "自选", "策略"}
     assert sources["000002"] == {"策略"}
+    assert sources["000003"] == {"策略"}
     assert prices["000001"] == 9.4
 
 

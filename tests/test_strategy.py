@@ -10,7 +10,30 @@ from hypothesis import strategies as st
 
 from sequoia_x.core.config import Settings
 from sequoia_x.data.engine import DataEngine
+from sequoia_x.strategy.base import BaseStrategy
 from sequoia_x.strategy.ma_volume import MaVolumeStrategy
+
+
+class _FixedResultStrategy(BaseStrategy):
+    """用于验证基类统一过滤规则的固定结果策略。"""
+
+    def _run(self) -> list[str]:
+        return ["000001", "000002", "000003", "000004", "000005"]
+
+
+def test_all_strategies_exclude_st_stocks() -> None:
+    """所有策略的公开 run() 都应统一剔除各类 ST 股票。"""
+    engine = DataEngine.__new__(DataEngine)
+    engine.get_stock_names = lambda symbols: {
+        "000001": "平安银行",
+        "000002": "ST示例",
+        "000003": "*ST风险",
+        "000004": "s*st退市",
+        # 000005 暂无基础资料，不应误删。
+    }
+    strategy = _FixedResultStrategy(engine=engine, settings=None)  # type: ignore[arg-type]
+
+    assert strategy.run() == ["000001", "000005"]
 
 
 # Feature: sequoia-x-v2, Property 9: 策略 run() 返回值类型正确

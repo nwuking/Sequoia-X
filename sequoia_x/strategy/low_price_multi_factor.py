@@ -32,6 +32,10 @@ class LowPriceMultiFactorStrategy(BaseStrategy):
     _MAX_CLOSE: float = 30.0
     _MIN_TURNOVER_MA20: float = 80_000_000.0
 
+    def __init__(self, engine, settings) -> None:
+        super().__init__(engine, settings)
+        self.last_combination_ranking = pd.DataFrame()
+
     @staticmethod
     def _safe_zscore(series: pd.Series, ascending: bool = True) -> pd.Series:
         """对横截面数据做稳健标准化，避免标准差为 0 的异常。"""
@@ -45,24 +49,33 @@ class LowPriceMultiFactorStrategy(BaseStrategy):
         return result if ascending else -result
 
     def _score_symbol(self, symbol: str) -> dict[str, float] | None:
+        cfg = self.engine.thresholds
+        min_bars = cfg.integer("low_price_multi_factor", "min_bars")
         df = self.engine.get_ohlcv(symbol)
-        if len(df) < self._MIN_BARS:
+        if len(df) < min_bars:
             return None
 
         df = df.copy()
         df["close"] = pd.to_numeric(df["close"], errors="coerce")
         df["turnover"] = pd.to_numeric(df["turnover"], errors="coerce")
         df = df.dropna(subset=["close", "turnover"])
-        if len(df) < self._MIN_BARS:
+        if len(df) < min_bars:
             return None
 
-        df["ret_21"] = df["close"].pct_change(21, fill_method=None)
-        df["ret_252"] = df["close"].pct_change(252, fill_method=None)
-        df["mom_12_1"] = (df["close"].shift(21) / df["close"].shift(252)) - 1
+        skip_days = cfg.integer("low_price_multi_factor", "momentum_skip_days")
+        lookback_days = cfg.integer("low_price_multi_factor", "momentum_lookback_days")
+        volatility_days = cfg.integer("low_price_multi_factor", "volatility_days")
+        trend_days = cfg.integer("low_price_multi_factor", "trend_ma_days")
+        turnover_days = cfg.integer("low_price_multi_factor", "turnover_days")
+        df["ret_21"] = df["close"].pct_change(skip_days, fill_method=None)
+        df["ret_252"] = df["close"].pct_change(lookback_days, fill_method=None)
+        df["mom_12_1"] = (
+            df["close"].shift(skip_days) / df["close"].shift(lookback_days)
+        ) - 1
         df["daily_ret"] = df["close"].pct_change(fill_method=None)
-        df["volatility_60"] = df["daily_ret"].rolling(60).std()
-        df["ma120"] = df["close"].rolling(120).mean()
-        df["turnover_ma20"] = df["turnover"].rolling(20).mean()
+        df["volatility_60"] = df["daily_ret"].rolling(volatility_days).std()
+        df["ma120"] = df["close"].rolling(trend_days).mean()
+        df["turnover_ma20"] = df["turnover"].rolling(turnover_days).mean()
 
         last = df.iloc[-1]
         if (
@@ -73,9 +86,9 @@ class LowPriceMultiFactorStrategy(BaseStrategy):
         ):
             return None
 
-        if last["close"] > self._MAX_CLOSE:
+        if last["close"] > cfg.number("low_price_multi_factor", "max_close"):
             return None
-        if last["turnover_ma20"] < self._MIN_TURNOVER_MA20:
+        if last["turnover_ma20"] < cfg.number("low_price_multi_factor", "min_turnover_ma20"):
             return None
         if last["close"] <= 0 or last["ma120"] <= 0:
             return None
@@ -90,16 +103,18 @@ class LowPriceMultiFactorStrategy(BaseStrategy):
             "turnover_ma20": float(last["turnover_ma20"]),
         }
 
-    def run(self) -> list[str]:
+    def _run(self) -> list[str]:
         """返回当前横截面评分最高的前 3 只低价股。"""
-        ranked = self.rank_candidates(limit=self._MAX_HOLDINGS)
-        logger.info(f"LowPriceMultiFactorStrategy 选出 {len(ranked)} 只股票")
-        return ranked["symbol"].tolist() if not ranked.empty else []
+        cfg = self.engine.thresholds
+        ranked = self.rank_candidates(limit=cfg.integer("low_price_multi_factor", "ranking_limit"))
+        selected = ranked.head(cfg.integer("low_price_multi_factor", "max_holdings"))
+        logger.info(f"LowPriceMultiFactorStrategy 选出 {len(selected)} 只股票")
+        return selected["symbol"].tolist() if not selected.empty else []
 
     def rank_candidates(self, limit: int = 10) -> pd.DataFrame:
         """返回按分数降序排列的候选股票明细。"""
         rows: list[dict[str, float]] = []
-        for symbol in self.engine.get_local_symbols():
+        for symbol in self.get_eligible_symbols():
             try:
                 scored = self._score_symbol(symbol)
                 if scored is not None:
@@ -109,14 +124,22 @@ class LowPriceMultiFactorStrategy(BaseStrategy):
 
         if not rows:
             logger.info("LowPriceMultiFactorStrategy 无候选股票")
+            self.last_combination_ranking = pd.DataFrame()
             return pd.DataFrame()
 
         frame = pd.DataFrame(rows)
+        cfg = self.engine.thresholds
         frame["score"] = (
-            0.35 * self._safe_zscore(frame["momentum"], ascending=True)
-            + 0.20 * self._safe_zscore(frame["volatility"], ascending=False)
-            + 0.15 * self._safe_zscore(frame["trend_strength"], ascending=True)
-            + 0.10 * self._safe_zscore(frame["turnover_ma20"], ascending=True)
+            cfg.number("low_price_multi_factor", "weight_momentum") * self._safe_zscore(frame["momentum"], ascending=True)
+            + cfg.number("low_price_multi_factor", "weight_low_volatility") * self._safe_zscore(frame["volatility"], ascending=False)
+            + cfg.number("low_price_multi_factor", "weight_trend") * self._safe_zscore(frame["trend_strength"], ascending=True)
+            + cfg.number("low_price_multi_factor", "weight_liquidity") * self._safe_zscore(frame["turnover_ma20"], ascending=True)
+        )
+        # 组合层专用分数弱化动量和趋势，优先提供低波动与流动性证据，
+        # 避免和 ComprehensiveTrendStrategy 对同一趋势信号重复加权。
+        frame["combination_factor_score"] = (
+            cfg.number("low_price_multi_factor", "combo_weight_low_volatility") * self._safe_zscore(frame["volatility"], ascending=False)
+            + cfg.number("low_price_multi_factor", "combo_weight_liquidity") * self._safe_zscore(frame["turnover_ma20"], ascending=True)
         )
 
         financials = self.engine.get_latest_financial_factors(frame["symbol"].tolist())
@@ -141,17 +164,45 @@ class LowPriceMultiFactorStrategy(BaseStrategy):
             cashflow_quality = frame["operating_cashflow_ps"] / frame["eps"].replace(0, pd.NA)
             frame["score"] = (
                 frame["score"]
-                + 0.10 * self._safe_zscore(frame["roe"], ascending=True)
-                + 0.05 * self._safe_zscore(frame["revenue_yoy"], ascending=True)
-                + 0.05 * self._safe_zscore(frame["net_profit_yoy"], ascending=True)
-                + 0.05 * self._safe_zscore(cashflow_quality, ascending=True)
-                + 0.05 * self._safe_zscore(frame["pe_dynamic"], ascending=False)
-                + 0.05 * self._safe_zscore(frame["pb"], ascending=False)
+                + cfg.number("low_price_multi_factor", "weight_roe") * self._safe_zscore(frame["roe"], ascending=True)
+                + cfg.number("low_price_multi_factor", "weight_revenue_yoy") * self._safe_zscore(frame["revenue_yoy"], ascending=True)
+                + cfg.number("low_price_multi_factor", "weight_profit_yoy") * self._safe_zscore(frame["net_profit_yoy"], ascending=True)
+                + cfg.number("low_price_multi_factor", "weight_cashflow") * self._safe_zscore(cashflow_quality, ascending=True)
+                + cfg.number("low_price_multi_factor", "weight_pe") * self._safe_zscore(frame["pe_dynamic"], ascending=False)
+                + cfg.number("low_price_multi_factor", "weight_pb") * self._safe_zscore(frame["pb"], ascending=False)
+            )
+            frame["combination_factor_score"] = (
+                frame["combination_factor_score"]
+                + cfg.number("low_price_multi_factor", "combo_weight_roe") * self._safe_zscore(frame["roe"], ascending=True)
+                + cfg.number("low_price_multi_factor", "combo_weight_revenue_yoy") * self._safe_zscore(frame["revenue_yoy"], ascending=True)
+                + cfg.number("low_price_multi_factor", "combo_weight_profit_yoy") * self._safe_zscore(frame["net_profit_yoy"], ascending=True)
+                + cfg.number("low_price_multi_factor", "combo_weight_cashflow") * self._safe_zscore(cashflow_quality, ascending=True)
+                + cfg.number("low_price_multi_factor", "combo_weight_pe") * self._safe_zscore(frame["pe_dynamic"], ascending=False)
+                + cfg.number("low_price_multi_factor", "combo_weight_pb") * self._safe_zscore(frame["pb"], ascending=False)
             )
             if frame["gross_margin"].notna().any():
-                frame["score"] = frame["score"] + 0.05 * self._safe_zscore(
+                frame["score"] = frame["score"] + cfg.number(
+                    "low_price_multi_factor", "weight_gross_margin"
+                ) * self._safe_zscore(
                     frame["gross_margin"], ascending=True
                 )
+                frame["combination_factor_score"] = (
+                    frame["combination_factor_score"]
+                    + cfg.number("low_price_multi_factor", "combo_weight_gross_margin")
+                    * self._safe_zscore(frame["gross_margin"], ascending=True)
+                )
+        combination_ranking = (
+            frame.sort_values(
+                ["combination_factor_score", "volatility", "turnover_ma20"],
+                ascending=[False, True, False],
+            )
+            .head(cfg.integer("low_price_multi_factor", "ranking_limit"))
+            .reset_index(drop=True)
+        )
+        combination_ranking["factor_rank"] = combination_ranking.index + 1
+        self.last_combination_ranking = combination_ranking[
+            ["symbol", "factor_rank", "combination_factor_score"]
+        ].copy()
         ranked = (
             frame.sort_values(["score", "momentum", "turnover_ma20"], ascending=[False, False, False])
             .head(limit)

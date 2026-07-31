@@ -2,7 +2,7 @@
 
 两种运行模式：
   python main.py               # 日常模式：增量补数据 + 跑策略 + 飞书推送
-  python main.py --force       # 增量同步失败时，使用本地陈旧数据继续推送
+  python main.py --force       # 兼容参数；同步失败会自动告警并使用本地数据继续
   python main.py --backfill    # 回填模式：按本地最后日期续传历史K线
   python main.py --backfill --full-history  # 强制从 START_DATE 全量补齐历史
 """
@@ -10,6 +10,7 @@
 import argparse
 import json
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -41,22 +42,60 @@ from sequoia_x.strategy.uptrend_limit_down import UptrendLimitDownStrategy
 from sequoia_x.strategy.rps_breakout import RpsBreakoutStrategy
 from sequoia_x.strategy.private_placement import PrivatePlacementStrategy
 from sequoia_x.strategy.comprehensive_trend import ComprehensiveTrendStrategy
+from sequoia_x.strategy.combiner import StrategyCombiner
 
 
-def _sync_latest(engine: DataEngine, force: bool, logger) -> None:
-    """同步最新行情；force 模式下允许失败后继续使用本地数据。"""
+def _run_strategies(
+    strategies: list[BaseStrategy],
+    max_workers: int,
+    logger,
+) -> dict[str, list[str]]:
+    """并发执行独立策略，并按声明顺序收集结果。"""
+    worker_count = max(1, min(max_workers, len(strategies)))
+    logger.info(f"使用 {worker_count} 个线程并发执行 {len(strategies)} 个策略")
+    with ThreadPoolExecutor(
+        max_workers=worker_count,
+        thread_name_prefix="strategy",
+    ) as executor:
+        futures = []
+        for strategy in strategies:
+            strategy_name = type(strategy).__name__
+            logger.info(f"提交策略：{strategy_name}")
+            futures.append((strategy, executor.submit(strategy.run)))
+
+        selections: dict[str, list[str]] = {}
+        for strategy, future in futures:
+            strategy_name = type(strategy).__name__
+            try:
+                selected = future.result()
+            except Exception:
+                logger.exception(f"{strategy_name} 执行失败，继续处理其他策略")
+                selected = []
+            selections[strategy_name] = selected
+            logger.info(f"{strategy_name} 选出 {len(selected)} 只股票")
+    return selections
+
+
+def _sync_latest(engine: DataEngine, force: bool, logger, notifier=None) -> bool:
+    """同步最新行情；失败时告警并继续使用本地数据。"""
+    _ = force  # 保留命令行兼容性；当前无论是否指定 --force 都会降级继续。
     logger.info("开始拉取最新快照...")
     try:
         count = engine.sync_today_bulk()
     except Exception as exc:
-        if not force:
-            raise
         logger.warning(
-            "⚠️ 增量同步失败，但已启用 --force，将使用本地陈旧数据继续执行策略和推送："
+            "⚠️ baostock 登录或增量同步失败，将使用本地数据继续执行策略和推送："
             f"{exc}"
         )
-        return
+        if notifier is not None:
+            notifier.send_system_alert(
+                title="baostock 登录或同步失败",
+                message=str(exc),
+                data_date=engine.get_latest_date(),
+            )
+        return False
     logger.info(f"快照同步完成，写入 {count} 只股票")
+    return True
 
 
 def _run_prediction(engine: DataEngine, settings, symbols: list[str], horizon: int) -> None:
@@ -158,8 +197,7 @@ def _run_portfolio(
     factor_strategy = LowPriceMultiFactorStrategy(engine=engine, settings=settings)
     advice_report = PortfolioAdvisor(engine, strategy=factor_strategy).advise(portfolio)
     notifier = FeishuNotifier(settings)
-    notifier.send_portfolio(portfolio)
-    notifier.send_portfolio_advice(advice_report)
+    notifier.send_portfolio_report(portfolio, advice_report)
 
 
 def _run_intraday_monitor(engine: DataEngine, settings) -> None:
@@ -169,6 +207,7 @@ def _run_intraday_monitor(engine: DataEngine, settings) -> None:
     simulator = PaperTradingManager(
         settings.paper_trading_db_path,
         initial_capital=settings.paper_initial_capital,
+        thresholds=engine.thresholds,
     )
     simulator.sync_universe(
         monitor.latest_universe_sources,
@@ -176,6 +215,8 @@ def _run_intraday_monitor(engine: DataEngine, settings) -> None:
         monitor.latest_prices,
     )
     trades = simulator.apply_alerts(alerts)
+    accounts = simulator.accounts()
+    notifier = FeishuNotifier(settings)
     console = Console()
     if alerts:
         table = Table(title="盘中实时预警")
@@ -187,9 +228,14 @@ def _run_intraday_monitor(engine: DataEngine, settings) -> None:
                 f"{item.price:.3f}", item.message,
             )
         console.print(table)
-        FeishuNotifier(settings).send_intraday_alerts(alerts)
+        notifier.send_intraday_alerts(alerts)
     else:
         console.print("盘中监控完成：暂无新预警")
+        notifier.send_intraday_status(
+            monitored_count=len(monitor.latest_universe_sources),
+            quoted_count=len(monitor.latest_prices),
+            account_count=len(accounts),
+        )
 
     if trades:
         trade_table = Table(title="本次模拟交易")
@@ -201,8 +247,9 @@ def _run_intraday_monitor(engine: DataEngine, settings) -> None:
                 f"{trade.price:.3f}", f"{trade.amount:,.2f}", trade.reason,
             )
         console.print(trade_table)
+        notifier.send_paper_trades(trades)
     console.print(
-        f"模拟账户：{len(simulator.accounts())} 只股票，每只初始本金 "
+        f"模拟账户：{len(accounts)} 只股票，每只初始本金 "
         f"{settings.paper_initial_capital:,.0f} 元；数据：{settings.paper_trading_db_path}"
     )
 
@@ -247,7 +294,7 @@ def main() -> None:
     parser.add_argument(
         "--force",
         action="store_true",
-        help="增量同步失败时，使用本地陈旧数据继续执行策略并推送",
+        help="兼容参数；当前增量同步失败会自动告警并使用本地数据继续",
     )
     parser.add_argument(
         "--horizon",
@@ -326,15 +373,19 @@ def main() -> None:
             )
             return
 
-        # ── 日常模式：持仓使用独立不复权报价，先更新以免行情同步失败时漏推 ──
+        notifier = FeishuNotifier(settings)
+
+        # ── 先同步最新日K；失败则告警并自动降级到本地数据 ──
+        _sync_latest(engine, force=args.force, logger=logger, notifier=notifier)
+
+        # ── 最新日K入库后再生成持仓、低价多因子候选与操作观察 ──
         _run_portfolio(engine, settings)
 
-        # ── 单次 API 补今天 + 策略 + 推送 ──
-        _sync_latest(engine, force=args.force, logger=logger)
-
         # 4. 策略列表（新增策略在此追加即可）
+        comprehensive_strategy = ComprehensiveTrendStrategy(engine=engine, settings=settings)
+        low_price_strategy = LowPriceMultiFactorStrategy(engine=engine, settings=settings)
         strategies: list[BaseStrategy] = [
-            ComprehensiveTrendStrategy(engine=engine, settings=settings),
+            comprehensive_strategy,
             MaVolumeStrategy(engine=engine, settings=settings),
             TurtleTradeStrategy(engine=engine, settings=settings),
             HighTightFlagStrategy(engine=engine, settings=settings),
@@ -342,22 +393,21 @@ def main() -> None:
             UptrendLimitDownStrategy(engine=engine, settings=settings),
             RpsBreakoutStrategy(engine=engine, settings=settings),
             PrivatePlacementStrategy(engine=engine, settings=settings),
-            LowPriceMultiFactorStrategy(engine=engine, settings=settings),
+            low_price_strategy,
         ]
 
-        notifier = FeishuNotifier(settings)
         data_date = engine.get_latest_date()
         logger.info(f"当前策略使用的数据日期：{data_date or '未知'}")
 
-        # 5. 遍历策略，有结果则推送至对应机器人
-        strategy_selections: dict[str, list[str]] = {}
+        # 5. 原始策略并发计算；按声明顺序收集并推送结果
+        strategy_selections = _run_strategies(
+            strategies,
+            max_workers=settings.strategy_max_workers,
+            logger=logger,
+        )
         for strategy in strategies:
             strategy_name = type(strategy).__name__
-            logger.info(f"执行策略：{strategy_name}")
-
-            selected: list[str] = strategy.run()
-            strategy_selections[strategy_name] = selected
-            logger.info(f"{strategy_name} 选出 {len(selected)} 只股票")
+            selected = strategy_selections[strategy_name]
 
             if selected:
                 stock_names = engine.get_stock_names(selected)
@@ -371,11 +421,37 @@ def main() -> None:
             else:
                 logger.info(f"{strategy_name} 无选股结果，跳过推送")
 
+        combined = StrategyCombiner.combine(
+            strategy_selections,
+            comprehensive_strategy.last_assessments,
+            factor_candidates=low_price_strategy.last_combination_ranking.to_dict("records"),
+            thresholds=engine.thresholds,
+        )
+        logger.info(
+            f"组合决策：总候选 {len(combined.all_candidates)} 只，"
+            f"多策略共振 {len(combined.multi_strategy)} 只，"
+            f"跨策略组共振 {len(combined.multi_family)} 只，"
+            f"趋势确认 {len(combined.trend_confirmed)} 只，"
+            f"重点候选 {len(combined.focus)} 只"
+        )
+        if combined.focus:
+            notifier.send(
+                symbols=list(combined.focus),
+                strategy_name="组合决策重点候选",
+                webhook_key="default",
+                data_date=data_date,
+                stock_names=engine.get_stock_names(list(combined.focus)),
+            )
+
         selection_path = Path(settings.strategy_selection_path)
         selection_path.parent.mkdir(parents=True, exist_ok=True)
         selection_path.write_text(
             json.dumps(
-                {"data_date": data_date, "strategies": strategy_selections},
+                {
+                    "data_date": data_date,
+                    "strategies": strategy_selections,
+                    "combined": combined.to_dict(),
+                },
                 ensure_ascii=False,
                 indent=2,
             ),

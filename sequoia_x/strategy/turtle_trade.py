@@ -3,6 +3,7 @@
 import pandas as pd
 
 from sequoia_x.core.logger import get_logger
+from sequoia_x.data.baostock_gateway import serialized_baostock
 from sequoia_x.strategy.base import BaseStrategy
 
 logger = get_logger(__name__)
@@ -23,6 +24,7 @@ class TurtleTradeStrategy(BaseStrategy):
     webhook_key: str = "turtle"
     _MIN_BARS: int = 21  # 至少需要 21 根 K 线（20日窗口 + 当日）
 
+    @serialized_baostock
     def _get_market_caps(self, symbols: list[str]) -> dict[str, float]:
         """通过 baostock 查询候选股票的流通市值（不复权收盘价 × 流通股本）。
 
@@ -64,21 +66,25 @@ class TurtleTradeStrategy(BaseStrategy):
 
         return market_caps
 
-    def run(self) -> list[str]:
+    def _run(self) -> list[str]:
         """
         遍历全市场，返回满足海龟突破条件的股票代码列表。
         """
-        symbols = self.engine.get_local_symbols()
+        cfg = self.engine.thresholds
+        min_bars = cfg.integer("turtle_trade", "min_bars")
+        breakout_days = cfg.integer("turtle_trade", "breakout_days")
+        min_turnover = cfg.number("turtle_trade", "min_turnover")
+        symbols = self.get_eligible_symbols()
         candidates: list[str] = []
 
         for symbol in symbols:
             try:
                 df = self.engine.get_ohlcv(symbol)
-                if len(df) < self._MIN_BARS:
+                if len(df) < min_bars:
                     continue
 
                 # 向量化：前20日 high 的滚动最大值（不含当日，shift(1) 后取 rolling(20)）
-                df["high_20"] = df["high"].shift(1).rolling(20).max()
+                df["high_20"] = df["high"].shift(1).rolling(breakout_days).max()
 
                 last = df.iloc[-1]
                 prev = df.iloc[-2]  # 获取昨日数据，用于对比
@@ -89,7 +95,7 @@ class TurtleTradeStrategy(BaseStrategy):
                 # 核心条件 1：突破前 20 天最高点
                 breakout = last["close"] > last["high_20"]
                 # 核心条件 2：流动性过亿
-                liquid = last["turnover"] > 100_000_000
+                liquid = last["turnover"] > min_turnover
 
                 # 【新增防守条件】拒绝郑州煤电式的高开低走大阴线！
                 is_yang = last["close"] > last["open"]   # 实体必须是阳线（红柱）

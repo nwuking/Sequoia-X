@@ -23,25 +23,30 @@ class HighTightFlagStrategy(BaseStrategy):
     webhook_key: str = "flag"
     _MIN_BARS: int = 40  # 至少需要 40 根 K 线
 
-    def run(self) -> list[str]:
+    def _run(self) -> list[str]:
         """
         遍历全市场，返回满足高旗形整理条件的股票代码列表。
 
         Returns:
             满足条件的股票代码列表。
         """
-        symbols = self.engine.get_local_symbols()
+        cfg = self.engine.thresholds
+        min_bars = cfg.integer("high_tight_flag", "min_bars")
+        momentum_days = cfg.integer("high_tight_flag", "momentum_days")
+        consolidation_days = cfg.integer("high_tight_flag", "consolidation_days")
+        volume_days = cfg.integer("high_tight_flag", "volume_days")
+        symbols = self.get_eligible_symbols()
         selected: list[str] = []
 
         for symbol in symbols:
             try:
                 df = self.engine.get_ohlcv(symbol)
-                if len(df) < self._MIN_BARS:
+                if len(df) < min_bars:
                     continue
 
                 # 向量化计算各窗口指标
-                tail40 = df.tail(40)
-                tail10 = df.tail(10)
+                tail40 = df.tail(momentum_days)
+                tail10 = df.tail(consolidation_days)
 
                 high40 = tail40["high"].max()
                 low40 = tail40["low"].min()
@@ -52,14 +57,16 @@ class HighTightFlagStrategy(BaseStrategy):
                     continue
 
                 # 条件 1：强动量
-                momentum = high40 / low40 > 1.6
+                momentum = high40 / low40 > cfg.number("high_tight_flag", "momentum_ratio")
                 # 条件 2：极度收敛
-                consolidation = high10 / low10 < 1.15
+                consolidation = high10 / low10 < cfg.number("high_tight_flag", "consolidation_ratio")
                 # 条件 3：高位抗跌（近10天最低点不得低于40天最高点的80%）
-                high_level = low10 >= high40 * 0.8
+                high_level = low10 >= high40 * cfg.number("high_tight_flag", "high_level_ratio")
                 # 条件 4：缩量（向量化均值）
-                vol_ma20 = df["volume"].iloc[-21:-1].mean()
-                shrink = df["volume"].iloc[-1] < vol_ma20 * 0.6
+                vol_ma20 = df["volume"].iloc[-(volume_days + 1):-1].mean()
+                shrink = df["volume"].iloc[-1] < vol_ma20 * cfg.number(
+                    "high_tight_flag", "shrink_volume_ratio"
+                )
 
                 if momentum and consolidation and high_level and shrink:
                     selected.append(symbol)

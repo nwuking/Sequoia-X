@@ -111,11 +111,16 @@ class IntradayMonitor:
             return set()
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
-            return {
+            strategy_symbols = {
                 str(symbol).zfill(6)
                 for symbols in payload.get("strategies", {}).values()
                 for symbol in symbols
             }
+            combined_symbols = {
+                str(symbol).zfill(6)
+                for symbol in payload.get("combined", {}).get("focus", [])
+            }
+            return strategy_symbols | combined_symbols
         except (json.JSONDecodeError, OSError, AttributeError, TypeError):
             logger.warning("策略选股池读取失败，本次仅监控综合趋势快照与组合")
             return set()
@@ -173,11 +178,13 @@ class IntradayMonitor:
         path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
     def run(self) -> list[IntradayAlert]:
+        cfg = self.engine.thresholds
         snapshot = self._load_snapshot()
         assessments = {
             item["symbol"]: item
             for item in snapshot.get("assessments", [])
-            if float(item.get("score", 0)) >= 65 or item.get("entry_signal") != "等待确认"
+            if float(item.get("score", 0)) >= cfg.number("intraday_monitor", "snapshot_score")
+            or item.get("entry_signal") != "等待确认"
         }
         portfolio = self._load_portfolio()
         strategy_symbols = self._load_strategy_symbols()
@@ -233,29 +240,44 @@ class IntradayMonitor:
             if symbol in holdings and stop_price > 0 and quote.price <= stop_price:
                 add("高", "硬止损", f"实时价跌破日线计划止损价 {stop_price:.3f}")
             cost = costs.get(symbol)
-            if symbol in holdings and cost and quote.price / cost - 1 <= -0.08:
+            if symbol in holdings and cost and quote.price / cost - 1 <= cfg.number(
+                "intraday_monitor", "holding_stop_loss"
+            ):
                 add("高", "持仓亏损", f"相对持仓成本亏损已达 {quote.price / cost - 1:.1%}")
-            if projected_ratio >= 1.8 and quote.change_pct <= -0.03 and below_vwap:
+            if (
+                projected_ratio >= cfg.number("intraday_monitor", "sell_volume_ratio")
+                and quote.change_pct <= cfg.number("intraday_monitor", "sell_change_pct")
+                and below_vwap
+            ):
                 add(
                     "高" if symbol in holdings else "中",
                     "放量下跌",
                     f"预计全天量比 {projected_ratio:.2f}，涨跌幅 {quote.change_pct:+.1%}，低于VWAP",
                 )
-            if score >= 65 and quote.price >= quote.high * 0.995 and projected_ratio >= 1.5:
+            if (
+                score >= cfg.number("intraday_monitor", "breakout_score")
+                and quote.price
+                >= quote.high * cfg.number("intraday_monitor", "breakout_price_to_high")
+                and projected_ratio
+                >= cfg.number("intraday_monitor", "breakout_volume_ratio")
+            ):
                 add("中", "盘中突破候选", f"日线评分 {score:.1f}，预计全天量比 {projected_ratio:.2f}")
             if (
                 symbol not in assessments
                 and symbol in (strategy_symbols | watchlist)
-                and quote.change_pct >= 0.02
+                and quote.change_pct >= cfg.number("intraday_monitor", "strong_change_pct")
                 and quote.price >= quote.vwap
-                and projected_ratio >= 1.3
+                and projected_ratio >= cfg.number("intraday_monitor", "strong_volume_ratio")
             ):
                 add(
                     "中",
                     "盘中走强",
                     f"自选/策略标的涨幅 {quote.change_pct:+.1%}，预计全天量比 {projected_ratio:.2f}",
                 )
-            is_tail = quote_dt.hour == 14 and quote_dt.minute >= 45
+            is_tail = (
+                quote_dt.hour == cfg.integer("intraday_monitor", "tail_hour")
+                and quote_dt.minute >= cfg.integer("intraday_monitor", "tail_minute")
+            )
             if is_tail and entry != "等待确认" and quote.price >= quote.vwap:
                 add("中", "尾盘买点确认", f"前一日信号 {entry}，实时价仍在VWAP上方")
 

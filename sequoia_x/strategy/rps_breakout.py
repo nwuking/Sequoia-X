@@ -13,7 +13,10 @@ class RpsBreakoutStrategy(BaseStrategy):
     rps_period: int = 120
     rps_threshold: int = 90
 
-    def run(self) -> list[str]:
+    def _run(self) -> list[str]:
+        cfg = self.engine.thresholds
+        rps_period = cfg.integer("rps_breakout", "period")
+        rps_threshold = cfg.number("rps_breakout", "rps_threshold")
         try:
             with sqlite3.connect(self.engine.db_path) as conn:
                 df = pd.read_sql("SELECT symbol, date, close, high FROM stock_daily", conn)
@@ -28,7 +31,7 @@ class RpsBreakoutStrategy(BaseStrategy):
         df = df.sort_values(['symbol', 'date'])
 
         # 纵向计算涨幅
-        df['close_shift'] = df.groupby('symbol')['close'].shift(self.rps_period)
+        df['close_shift'] = df.groupby('symbol')['close'].shift(rps_period)
         df['pct_change'] = (df['close'] - df['close_shift']) / df['close_shift']
 
         latest_date = df['date'].max()
@@ -37,11 +40,12 @@ class RpsBreakoutStrategy(BaseStrategy):
 
         # 横向排位 (RPS)
         latest_df['rps'] = latest_df['pct_change'].rank(pct=True) * 100
-        strong_stocks = latest_df[latest_df['rps'] >= self.rps_threshold].copy()
+        strong_stocks = latest_df[latest_df['rps'] >= rps_threshold].copy()
 
         # 计算滚动最高价
         roll_high = df.groupby('symbol')['high'].rolling(
-            window=self.rps_period, min_periods=self.rps_period // 2
+            window=rps_period,
+            min_periods=max(1, int(rps_period * cfg.number("rps_breakout", "min_period_ratio"))),
         ).max().reset_index(level=0, drop=True)
         df['roll_high'] = roll_high
 
@@ -49,7 +53,9 @@ class RpsBreakoutStrategy(BaseStrategy):
         strong_stocks = strong_stocks.merge(latest_roll_high, on='symbol')
 
         # 突破判定
-        breakout_condition = strong_stocks['close'] >= strong_stocks['roll_high'] * 0.90
+        breakout_condition = strong_stocks['close'] >= strong_stocks['roll_high'] * cfg.number(
+            "rps_breakout", "breakout_ratio"
+        )
         selected = strong_stocks[breakout_condition]
 
         logger.info(f"RpsBreakoutStrategy 选出 {len(selected)} 只股票")

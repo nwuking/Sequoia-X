@@ -23,26 +23,29 @@ class UptrendLimitDownStrategy(BaseStrategy):
     webhook_key: str = "limit_down"
     _MIN_BARS: int = 60  # 至少需要 60 根 K 线（60日均线）
 
-    def run(self) -> list[str]:
+    def _run(self) -> list[str]:
         """
         遍历全市场，返回满足上升趋势跌停条件的股票代码列表。
 
         Returns:
             满足条件的股票代码列表。
         """
-        symbols = self.engine.get_local_symbols()
+        cfg = self.engine.thresholds
+        short_ma = cfg.integer("uptrend_limit_down", "short_ma")
+        long_ma = cfg.integer("uptrend_limit_down", "long_ma")
+        symbols = self.get_eligible_symbols()
         selected: list[str] = []
 
         for symbol in symbols:
             try:
                 df = self.engine.get_ohlcv(symbol)
-                if len(df) < self._MIN_BARS:
+                if len(df) < cfg.integer("uptrend_limit_down", "min_bars"):
                     continue
 
                 # 向量化计算均线
-                df["ma20"] = df["close"].rolling(20).mean()
-                df["ma60"] = df["close"].rolling(60).mean()
-                df["vol_ma20"] = df["volume"].rolling(20).mean()
+                df["ma20"] = df["close"].rolling(short_ma).mean()
+                df["ma60"] = df["close"].rolling(long_ma).mean()
+                df["vol_ma20"] = df["volume"].rolling(short_ma).mean()
 
                 prev = df.iloc[-2]  # 昨日
                 today = df.iloc[-1]  # 今日
@@ -53,8 +56,12 @@ class UptrendLimitDownStrategy(BaseStrategy):
                 # 条件 1：上升趋势（昨日均线多头排列）
                 uptrend = prev["ma20"] > prev["ma60"]
                 # 条件 2：放量跌停
-                limit_down = today["close"] <= prev["close"] * 0.905
-                volume_surge = today["volume"] > today["vol_ma20"] * 2.0
+                limit_down = today["close"] <= prev["close"] * cfg.number(
+                    "uptrend_limit_down", "limit_down_ratio"
+                )
+                volume_surge = today["volume"] > today["vol_ma20"] * cfg.number(
+                    "uptrend_limit_down", "volume_ratio"
+                )
 
                 if uptrend and limit_down and volume_surge:
                     selected.append(symbol)

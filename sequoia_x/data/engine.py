@@ -8,6 +8,8 @@ import pandas as pd
 
 from sequoia_x.core.config import Settings
 from sequoia_x.core.logger import get_logger
+from sequoia_x.core.thresholds import ThresholdConfig
+from sequoia_x.data.baostock_gateway import serialized_baostock
 
 logger = get_logger(__name__)
 
@@ -82,6 +84,7 @@ class DataEngine:
         self.db_path: str = settings.db_path
         self.start_date: str = settings.start_date
         self.baostock_daily_request_limit: int = settings.baostock_daily_request_limit
+        self.thresholds = ThresholdConfig(settings.thresholds_config_path)
         self._init_db()
 
     def _init_db(self) -> None:
@@ -335,6 +338,7 @@ class DataEngine:
 
     # ── 数据同步 ──
 
+    @serialized_baostock
     def sync_today_bulk(self) -> int:
         """通过单连接串行拉取增量数据（后复权），写入 SQLite。"""
         import time
@@ -446,6 +450,7 @@ class DataEngine:
         logger.info(f"sync_today_bulk: 写入 {count} 条数据")
         return count
 
+    @serialized_baostock
     def backfill(self, symbols: list[str], full_history: bool = False) -> None:
         """通过 baostock 批量回填历史日 K 线数据（后复权）。
 
@@ -595,6 +600,7 @@ class DataEngine:
 
     # ── 股票列表 ──
 
+    @serialized_baostock
     def get_all_symbols(self) -> list[str]:
         """通过 baostock 获取全市场 A 股代码及中文名，并保存到本地。"""
         from datetime import date

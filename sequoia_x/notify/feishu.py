@@ -334,7 +334,13 @@ class FeishuNotifier:
                     "template": "orange",
                 },
                 "elements": [
-                    {"tag": "div", "text": {"tag": "lark_md", "content": "\n\n".join(rows)}},
+                    {
+                        "tag": "div",
+                        "text": {
+                            "tag": "lark_md",
+                            "content": "\n\n".join(rows) if rows else "暂无明确操作建议",
+                        },
+                    },
                     {"tag": "hr"},
                     {
                         "tag": "div",
@@ -367,6 +373,45 @@ class FeishuNotifier:
                         ],
                     },
                 ],
+            },
+        }
+
+    def _build_portfolio_report_card(self, portfolio: pd.DataFrame, report) -> dict:
+        """将持仓概览和下一工作日操作观察合并为一张卡片。"""
+        if isinstance(report, list):
+            report = SimpleNamespace(advice=report, candidates=[], replacements=[])
+        if report is None:
+            report = SimpleNamespace(advice=[], candidates=[], replacements=[])
+
+        portfolio_card = self._build_portfolio_card(portfolio)
+        advice_card = self._build_portfolio_advice_card(report)
+        advice = report.advice
+        next_workday = advice[0].next_workday if advice else "待确认"
+        elements = list(portfolio_card["card"]["elements"])
+        elements.extend(
+            [
+                {"tag": "hr"},
+                {
+                    "tag": "div",
+                    "text": {
+                        "tag": "lark_md",
+                        "content": f"**下一工作日操作观察：** {next_workday}",
+                    },
+                },
+                *advice_card["card"]["elements"],
+            ]
+        )
+        return {
+            "msg_type": "interactive",
+            "card": {
+                "header": {
+                    "title": {
+                        "tag": "plain_text",
+                        "content": "💼 Sequoia-X 持仓与下一工作日操作观察",
+                    },
+                    "template": "wathet",
+                },
+                "elements": elements,
             },
         }
 
@@ -428,6 +473,39 @@ class FeishuNotifier:
             f"飞书推送成功 [{webhook_key}]，共 {len(symbols)} 只股票",
         )
 
+    def send_system_alert(
+        self,
+        title: str,
+        message: str,
+        data_date: str | None = None,
+        webhook_key: str = "system",
+    ) -> None:
+        """推送数据同步等系统级异常告警。"""
+        payload = {
+            "msg_type": "interactive",
+            "card": {
+                "header": {
+                    "title": {"tag": "plain_text", "content": f"🚨 Sequoia-X | {title}"},
+                    "template": "red",
+                },
+                "elements": [
+                    {
+                        "tag": "div",
+                        "text": {
+                            "tag": "lark_md",
+                            "content": (
+                                f"**告警日期：** {date.today().isoformat()}\n"
+                                f"**本地数据日期：** {data_date or '未知'}\n"
+                                f"**处理方式：** 继续使用本地数据执行持仓、策略和组合决策\n\n"
+                                f"**异常信息：**\n{message}"
+                            ),
+                        },
+                    }
+                ],
+            },
+        }
+        self._post_payload(payload, webhook_key, f"系统告警飞书推送成功 [{webhook_key}]")
+
     def send_prediction(
         self,
         results: list,
@@ -457,6 +535,89 @@ class FeishuNotifier:
             f"盘中预警飞书推送成功 [{webhook_key}]，共 {len(alerts)} 条",
         )
 
+    def send_intraday_status(
+        self,
+        monitored_count: int,
+        quoted_count: int,
+        account_count: int,
+        webhook_key: str = "intraday",
+    ) -> None:
+        """盘中无新信号时推送监控正常状态。"""
+        payload = {
+            "msg_type": "interactive",
+            "card": {
+                "header": {
+                    "title": {"tag": "plain_text", "content": "✅ Sequoia-X 盘中监控正常"},
+                    "template": "green",
+                },
+                "elements": [
+                    {
+                        "tag": "div",
+                        "text": {
+                            "tag": "lark_md",
+                            "content": (
+                                f"**监控日期：** {date.today().isoformat()}\n"
+                                f"**监控股票：** {monitored_count} 只\n"
+                                f"**取得实时报价：** {quoted_count} 只\n"
+                                f"**模拟账户：** {account_count} 个\n\n"
+                                "本轮检查完成，**暂无新的盘中预警信号**。"
+                            ),
+                        },
+                    }
+                ],
+            },
+        }
+        self._post_payload(payload, webhook_key, f"盘中无信号状态推送成功 [{webhook_key}]")
+
+    def send_paper_trades(self, trades: list, webhook_key: str = "paper_trading") -> None:
+        """推送本轮模拟交易成交记录。"""
+        if not trades:
+            return
+        rows = []
+        for trade in trades[:50]:
+            xq_code = self._to_xueqiu_code(trade.symbol)
+            rows.append(
+                f"[{trade.name} {trade.symbol}](https://xueqiu.com/S/{xq_code})｜"
+                f"**{trade.action}** {trade.shares}股｜价格 {trade.price:.3f}｜"
+                f"金额 {trade.amount:,.2f}元\n{trade.reason}｜{trade.traded_at}"
+            )
+        if len(trades) > 50:
+            rows.append(f"其余 {len(trades) - 50} 笔成交因消息长度限制未展示")
+        payload = {
+            "msg_type": "interactive",
+            "card": {
+                "header": {
+                    "title": {"tag": "plain_text", "content": "🧪 Sequoia-X 模拟交易成交"},
+                    "template": "orange",
+                },
+                "elements": [
+                    {
+                        "tag": "div",
+                        "text": {
+                            "tag": "lark_md",
+                            "content": f"**本轮成交：** {len(trades)} 笔",
+                        },
+                    },
+                    {"tag": "hr"},
+                    {"tag": "div", "text": {"tag": "lark_md", "content": "\n\n".join(rows)}},
+                    {
+                        "tag": "note",
+                        "elements": [
+                            {
+                                "tag": "plain_text",
+                                "content": "仅为本地模拟交易，不会修改真实持仓或发出真实委托。",
+                            }
+                        ],
+                    },
+                ],
+            },
+        }
+        self._post_payload(
+            payload,
+            webhook_key,
+            f"模拟交易成交推送成功 [{webhook_key}]，共 {len(trades)} 笔",
+        )
+
     def send_portfolio(
         self,
         portfolio: pd.DataFrame,
@@ -470,6 +631,22 @@ class FeishuNotifier:
             self._build_portfolio_card(portfolio),
             webhook_key,
             f"持仓信息飞书推送成功 [{webhook_key}]",
+        )
+
+    def send_portfolio_report(
+        self,
+        portfolio: pd.DataFrame,
+        report,
+        webhook_key: str = "portfolio",
+    ) -> None:
+        """一次推送持仓概览和下一工作日操作观察。"""
+        if portfolio.empty:
+            logger.info("组合为空，跳过飞书推送")
+            return
+        self._post_payload(
+            self._build_portfolio_report_card(portfolio, report),
+            webhook_key,
+            f"持仓与操作观察飞书推送成功 [{webhook_key}]",
         )
 
     def send_portfolio_advice(

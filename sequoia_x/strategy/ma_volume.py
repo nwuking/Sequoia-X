@@ -21,26 +21,31 @@ class MaVolumeStrategy(BaseStrategy):
 
     webhook_key: str = "ma_volume"
 
-    def run(self) -> list[str]:
+    def _run(self) -> list[str]:
         """
         遍历全市场，返回满足均线金叉+放量条件的股票代码列表。
 
         Returns:
             满足条件的股票代码列表。
         """
-        symbols = self.engine.get_local_symbols()
+        cfg = self.engine.thresholds
+        min_bars = cfg.integer("ma_volume", "min_bars")
+        short_ma = cfg.integer("ma_volume", "short_ma")
+        long_ma = cfg.integer("ma_volume", "long_ma")
+        volume_ratio = cfg.number("ma_volume", "volume_ratio")
+        symbols = self.get_eligible_symbols()
         selected: list[str] = []
 
         for symbol in symbols:
             try:
                 df = self.engine.get_ohlcv(symbol)
-                if len(df) < 20:
+                if len(df) < min_bars:
                     continue
 
                 # 向量化计算均线和成交量均值
-                df["ma5"] = df["close"].rolling(5).mean()
-                df["ma20"] = df["close"].rolling(20).mean()
-                df["vol_ma20"] = df["volume"].rolling(20).mean()
+                df["ma5"] = df["close"].rolling(short_ma).mean()
+                df["ma20"] = df["close"].rolling(long_ma).mean()
+                df["vol_ma20"] = df["volume"].rolling(long_ma).mean()
 
                 # 取最后两行判断金叉（昨日 ma5 < ma20，今日 ma5 > ma20）
                 last = df.iloc[-1]
@@ -50,7 +55,7 @@ class MaVolumeStrategy(BaseStrategy):
                     prev["ma5"] < prev["ma20"]
                     and last["ma5"] > last["ma20"]
                 )
-                volume_surge = last["volume"] > last["vol_ma20"] * 1.5
+                volume_surge = last["volume"] > last["vol_ma20"] * volume_ratio
 
                 if golden_cross and volume_surge:
                     selected.append(symbol)

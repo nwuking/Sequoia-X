@@ -133,9 +133,11 @@ class EnsemblePredictor:
         df["target"] = np.where(df["forward_return"].notna(), (df["forward_return"] > 0).astype(int), np.nan)
         return df.replace([np.inf, -np.inf], np.nan)
 
-    @staticmethod
-    def _metrics(y_true: pd.Series, probabilities: np.ndarray) -> dict[str, float]:
-        predictions = (probabilities >= 0.5).astype(int)
+    def _metrics(self, y_true: pd.Series, probabilities: np.ndarray) -> dict[str, float]:
+        direction_probability = self.engine.thresholds.number(
+            "prediction", "direction_probability"
+        )
+        predictions = (probabilities >= direction_probability).astype(int)
         metrics = {
             "accuracy": float(accuracy_score(y_true, predictions)),
             "balanced_accuracy": float(balanced_accuracy_score(y_true, predictions)),
@@ -145,7 +147,11 @@ class EnsemblePredictor:
         metrics["roc_auc"] = (
             float(roc_auc_score(y_true, probabilities)) if y_true.nunique() > 1 else 0.5
         )
-        confident = (probabilities <= 0.4) | (probabilities >= 0.6)
+        confident = (
+            probabilities <= self.engine.thresholds.number("prediction", "confidence_low")
+        ) | (
+            probabilities >= self.engine.thresholds.number("prediction", "confidence_high")
+        )
         metrics["high_confidence_coverage"] = float(confident.mean())
         metrics["high_confidence_accuracy"] = (
             float(accuracy_score(y_true[confident], predictions[confident]))
@@ -181,6 +187,13 @@ class EnsemblePredictor:
         horizon: int = 5,
     ) -> tuple[list[PredictionResult], dict[str, float]]:
         """训练时间外验证模型并预测指定股票未来 horizon 个交易日涨跌概率。"""
+        cfg = self.engine.thresholds
+        min_horizon = cfg.integer("prediction", "min_horizon")
+        max_horizon = cfg.integer("prediction", "max_horizon")
+        if horizon < min_horizon or horizon > max_horizon:
+            raise ValueError(
+                f"预测周期 horizon 必须在 {min_horizon} 到 {max_horizon} 个交易日之间"
+            )
         requested = list(dict.fromkeys(symbol.zfill(6) for symbol in symbols))
         if not requested:
             raise ValueError("至少需要指定一个股票代码")
@@ -188,16 +201,19 @@ class EnsemblePredictor:
         features = self.build_features(self._load_data(), horizon=horizon)
         usable = features.dropna(subset=self.feature_columns + ["target", "forward_return"]).copy()
         unique_dates = sorted(usable["date"].unique())
-        if len(unique_dates) < 80:
-            raise ValueError("有效历史数据不足 80 个交易日，无法进行可靠的时间外验证")
+        min_days = cfg.integer("prediction", "min_validation_days")
+        if len(unique_dates) < min_days:
+            raise ValueError(f"有效历史数据不足 {min_days} 个交易日，无法进行可靠的时间外验证")
 
-        split_index = int(len(unique_dates) * 0.8)
+        split_index = int(len(unique_dates) * cfg.number("prediction", "train_ratio"))
         split_date = unique_dates[split_index]
         train_end_date = unique_dates[max(0, split_index - horizon)]
         train = usable[usable["date"] < train_end_date]
         validation = usable[usable["date"] >= split_date]
         train_dates = sorted(train["date"].unique())
-        calibration_index = int(len(train_dates) * 0.85)
+        calibration_index = int(
+            len(train_dates) * cfg.number("prediction", "calibration_ratio")
+        )
         calibration_date = train_dates[calibration_index]
         model_train_end_date = train_dates[max(0, calibration_index - horizon)]
         model_train = train[train["date"] < model_train_end_date]
@@ -288,7 +304,11 @@ class EnsemblePredictor:
                     data_date=row["date"].strftime("%Y-%m-%d"),
                     horizon=horizon,
                     up_probability=float(probability),
-                    direction="上涨" if probability >= 0.5 else "下跌",
+                    direction=(
+                        "上涨"
+                        if probability >= cfg.number("prediction", "direction_probability")
+                        else "下跌"
+                    ),
                     expected_return=expected_return,
                 )
             )

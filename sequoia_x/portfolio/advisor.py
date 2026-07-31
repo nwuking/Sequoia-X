@@ -67,7 +67,10 @@ class PortfolioAdvisor:
     def _build_candidates(self) -> list[PortfolioCandidate]:
         if self.strategy is None:
             return []
-        ranked = self.strategy.rank_candidates(limit=10)
+        cfg = self.engine.thresholds
+        ranked = self.strategy.rank_candidates(
+            limit=cfg.integer("portfolio_advisor", "candidate_limit")
+        )
         if ranked.empty:
             return []
         from sequoia_x.portfolio.manager import PortfolioManager
@@ -88,7 +91,8 @@ class PortfolioAdvisor:
                     score=float(row["score"]),
                     close=display_close,
                     rank=int(row["rank"]),
-                    is_focus=int(row["rank"]) <= 3,
+                    is_focus=int(row["rank"])
+                    <= cfg.integer("portfolio_advisor", "focus_rank_limit"),
                 )
             )
         return candidates
@@ -118,7 +122,8 @@ class PortfolioAdvisor:
             ascending=[True, True],
             na_position="first",
         )
-        candidate_pool = [candidate for candidate in candidates if candidate.rank <= 3]
+        focus_limit = self.engine.thresholds.integer("portfolio_advisor", "focus_rank_limit")
+        candidate_pool = [candidate for candidate in candidates if candidate.rank <= focus_limit]
         replacements: list[PortfolioReplacement] = []
         used_buys: set[str] = set()
         for (_, row), candidate in zip(ranked_holdings.iterrows(), candidate_pool, strict=False):
@@ -142,12 +147,13 @@ class PortfolioAdvisor:
         return replacements
 
     def advise(self, portfolio: pd.DataFrame) -> PortfolioAdviceReport:
+        cfg = self.engine.thresholds
         advice: list[PortfolioAdvice] = []
         next_workday = self._next_workday()
         for _, row in portfolio.iterrows():
             symbol = row["symbol"]
             df = self.engine.get_ohlcv(symbol)
-            if len(df) < 60:
+            if len(df) < cfg.integer("portfolio_advisor", "min_history"):
                 continue
             close = df["close"]
             adjusted_latest = float(close.iloc[-1])
@@ -169,13 +175,20 @@ class PortfolioAdvisor:
             holding_return = real_latest / float(cost) - 1 if shares > 0 and pd.notna(cost) and cost > 0 else 0
 
             if shares > 0:
-                if holding_return <= -0.08 and adjusted_latest < ma20 and ma5 < ma20:
+                if (
+                    holding_return <= cfg.number("portfolio_advisor", "stop_loss")
+                    and adjusted_latest < ma20
+                    and ma5 < ma20
+                ):
                     action, risk = "减仓/执行止损纪律", "高"
                     reason = f"持仓亏损{holding_return:.1%}，价格低于20日线且短期趋势向下"
                 elif adjusted_latest < ma60 and ma20 < ma60:
                     action, risk = "逢反弹减仓", "高"
                     reason = "收盘价与20日线均低于60日线，中期趋势偏弱"
-                elif holding_return >= 0.15 and rsi >= 72:
+                elif (
+                    holding_return >= cfg.number("portfolio_advisor", "take_profit")
+                    and rsi >= cfg.number("portfolio_advisor", "take_profit_rsi")
+                ):
                     action, risk = "分批止盈", "中"
                     reason = f"持仓收益{holding_return:.1%}且RSI={rsi:.1f}，短线偏热"
                 elif adjusted_latest > ma20 and ma5 > ma20 and ma20 > ma60:
@@ -185,10 +198,16 @@ class PortfolioAdvisor:
                     action, risk = "持有观察，不加仓", "中"
                     reason = f"趋势信号混合；RSI={rsi:.1f}，量比={volume_ratio:.2f}"
             else:
-                if ma5 > ma20 > ma60 and 45 <= rsi <= 70 and volume_ratio >= 1:
+                if (
+                    ma5 > ma20 > ma60
+                    and cfg.number("portfolio_advisor", "watch_rsi_min")
+                    <= rsi
+                    <= cfg.number("portfolio_advisor", "watch_rsi_max")
+                    and volume_ratio >= cfg.number("portfolio_advisor", "min_volume_ratio")
+                ):
                     action, risk = "关注回踩确认，避免追高", "中"
                     reason = f"均线多头、RSI={rsi:.1f}、量比={volume_ratio:.2f}"
-                elif rsi < 30:
+                elif rsi < cfg.number("portfolio_advisor", "oversold_rsi"):
                     action, risk = "超跌观察，等待止跌", "高"
                     reason = f"RSI={rsi:.1f}，尚需价格企稳确认"
                 else:

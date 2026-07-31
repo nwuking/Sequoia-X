@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from sequoia_x.core.logger import get_logger
+from sequoia_x.core.thresholds import ThresholdConfig
 from sequoia_x.strategy.base import BaseStrategy
 
 logger = get_logger(__name__)
@@ -101,7 +102,11 @@ class ComprehensiveTrendStrategy(BaseStrategy):
         return df
 
     @staticmethod
-    def _market_context(frames: dict[str, pd.DataFrame]) -> dict[str, float | bool]:
+    def _market_context(
+        frames: dict[str, pd.DataFrame],
+        thresholds: ThresholdConfig | None = None,
+    ) -> dict[str, float | bool]:
+        cfg = thresholds or ThresholdConfig("config/thresholds.ini")
         returns = []
         latest_above20: list[bool] = []
         for frame in frames.values():
@@ -123,12 +128,23 @@ class ComprehensiveTrendStrategy(BaseStrategy):
             score += 5 if proxy.iloc[-1] > ma20.iloc[-1] else 0
             score += 5 if ma20.iloc[-1] > ma20.iloc[-6] else 0
             score += 5 if proxy.iloc[-1] > ma60.iloc[-1] else 0
-            score += 5 if breadth >= 0.55 else 0
+            score += 5 if breadth >= cfg.number(
+                "comprehensive_trend", "market_breadth_threshold"
+            ) else 0
         ret20 = float(proxy.pct_change(20).iloc[-1]) if len(proxy) > 20 else 0.0
-        return {"score": score, "ret20": ret20, "strong": score >= 15, "breadth": breadth}
+        return {
+            "score": score,
+            "ret20": ret20,
+            "strong": score >= cfg.number("comprehensive_trend", "market_strong_score"),
+            "breadth": breadth,
+        }
 
     @staticmethod
-    def _classify(df: pd.DataFrame) -> str:
+    def _classify(
+        df: pd.DataFrame,
+        thresholds: ThresholdConfig | None = None,
+    ) -> str:
+        cfg = thresholds or ThresholdConfig("config/thresholds.ini")
         last, prev = df.iloc[-1], df.iloc[-2]
         recent = df.iloc[-20:]
         up_volume = recent.loc[recent["close"].diff() > 0, "volume"].mean()
@@ -145,7 +161,7 @@ class ComprehensiveTrendStrategy(BaseStrategy):
             and last["ma20"] > df["ma20"].iloc[-6]
             and last["ma60"] > df["ma60"].iloc[-6]
             and last["dif"] > last["dea"]
-            and last["rsi"] >= 55
+            and last["rsi"] >= cfg.number("comprehensive_trend", "uptrend_rsi")
         ):
             return "主升浪" if last["close"] >= last["high60_prev"] else "上升趋势"
         if (
@@ -157,11 +173,13 @@ class ComprehensiveTrendStrategy(BaseStrategy):
                 return "下跌反弹"
             return "阴跌趋势"
         if (
-            drawdown60 < -0.15
-            and range40 <= 0.25
-            and abs(last["ma20"] / df["ma20"].iloc[-6] - 1) <= 0.02
+            drawdown60 < cfg.number("comprehensive_trend", "accumulation_drawdown")
+            and range40 <= cfg.number("comprehensive_trend", "accumulation_range")
+            and abs(last["ma20"] / df["ma20"].iloc[-6] - 1)
+            <= cfg.number("comprehensive_trend", "accumulation_ma_slope")
             and shrinking_band
-            and up_volume >= down_volume * 0.8
+            and up_volume
+            >= down_volume * cfg.number("comprehensive_trend", "accumulation_volume_balance")
             and obv_holds
         ):
             return "底部吸筹候选"
@@ -169,16 +187,20 @@ class ComprehensiveTrendStrategy(BaseStrategy):
             last["close"] > last["ma60"]
             and last["ma60"] > df["ma60"].iloc[-6]
             and last["volume"] < last["vol20"]
-            and last["rsi"] >= 40
+            and last["rsi"] >= cfg.number("comprehensive_trend", "wash_rsi_floor")
             and obv_holds
         ):
             return "洗盘候选"
-        high_zone = last["close"] >= df["high"].iloc[-60:].max() * 0.85
+        high_zone = last["close"] >= df["high"].iloc[-60:].max() * cfg.number(
+            "comprehensive_trend", "distribution_high_zone"
+        )
         distribution = (
             high_zone
             and down_volume > up_volume
             and last["close"] < last["ma20"]
-            and last["obv"] < df["obv"].iloc[-20:].max() * 0.98
+            and last["obv"]
+            < df["obv"].iloc[-20:].max()
+            * cfg.number("comprehensive_trend", "distribution_obv_ratio")
         )
         if distribution:
             return "主力撤离候选"
@@ -192,8 +214,10 @@ class ComprehensiveTrendStrategy(BaseStrategy):
         market: dict[str, float | bool],
         name: str = "",
         financial: pd.Series | None = None,
+        thresholds: ThresholdConfig | None = None,
     ) -> TrendAssessment | None:
-        if len(source) < cls.min_history:
+        cfg = thresholds or ThresholdConfig("config/thresholds.ini")
+        if len(source) < cfg.integer("comprehensive_trend", "min_history"):
             return None
         df = cls._indicators(source)
         last, prev = df.iloc[-1], df.iloc[-2]
@@ -252,8 +276,13 @@ class ComprehensiveTrendStrategy(BaseStrategy):
         deviation = float(last["close"] / last["ma20"] - 1)
         upper_shadow = float(last["high"] - max(last["open"], last["close"]))
         body_range = max(float(last["high"] - last["low"]), 1e-9)
-        high_volume_shadow = last["volume"] >= last["vol20"] * 1.8 and upper_shadow / body_range >= 0.4
-        if deviation > 0.15:
+        high_volume_shadow = (
+            last["volume"]
+            >= last["vol20"] * cfg.number("comprehensive_trend", "high_volume_ratio")
+            and upper_shadow / body_range
+            >= cfg.number("comprehensive_trend", "upper_shadow_ratio")
+        )
+        if deviation > cfg.number("comprehensive_trend", "deviation_risk"):
             risk_deduction += 5
             reasons.append("风险：偏离MA20超过15%")
         if high_volume_shadow:
@@ -268,22 +297,34 @@ class ComprehensiveTrendStrategy(BaseStrategy):
         if financial is not None:
             profit_yoy = pd.to_numeric(financial.get("net_profit_yoy"), errors="coerce")
             roe = pd.to_numeric(financial.get("roe"), errors="coerce")
-            if (pd.notna(profit_yoy) and profit_yoy <= -50) or (pd.notna(roe) and roe < 0):
+            if (
+                pd.notna(profit_yoy)
+                and profit_yoy
+                <= cfg.number("comprehensive_trend", "financial_profit_yoy_floor")
+            ) or (
+                pd.notna(roe)
+                and roe < cfg.number("comprehensive_trend", "financial_roe_floor")
+            ):
                 risk_deduction += 10
                 reasons.append("风险：财务质量显著走弱")
         score = round(max(0.0, min(100.0, score - risk_deduction)), 1)
 
         breakout = (
             last["close"] >= last["high60_prev"]
-            and last["volume"] >= last["vol20"] * 1.5
-            and (last["high"] - last["close"]) / body_range <= 0.35
+            and last["volume"]
+            >= last["vol20"] * cfg.number("comprehensive_trend", "breakout_volume_ratio")
+            and (last["high"] - last["close"]) / body_range
+            <= cfg.number("comprehensive_trend", "breakout_upper_shadow_ratio")
             and bool(market["strong"])
         )
         pullback = (
             last["close"] > last["ma60"]
-            and last["low"] <= max(last["ma10"], last["ma20"]) * 1.02
+            and last["low"]
+            <= max(last["ma10"], last["ma20"])
+            * cfg.number("comprehensive_trend", "pullback_price_buffer")
             and last["close"] >= last["ma20"]
-            and last["volume"] <= last["vol20"] * 0.8
+            and last["volume"]
+            <= last["vol20"] * cfg.number("comprehensive_trend", "pullback_volume_ratio")
             and last["close"] > prev["close"]
         )
         recovery = (
@@ -294,32 +335,45 @@ class ComprehensiveTrendStrategy(BaseStrategy):
             and last["volume"] >= last["vol5"]
             and last["close"] >= df["high"].iloc[-6:-1].max()
         )
-        if breakout and score >= 75:
+        if breakout and score >= cfg.number("comprehensive_trend", "entry_score_a"):
             entry_signal = "A-平台放量突破"
-        elif pullback and score >= 65:
+        elif pullback and score >= cfg.number("comprehensive_trend", "entry_score_b"):
             entry_signal = "B-突破后缩量回踩"
-        elif recovery and score >= 65:
+        elif recovery and score >= cfg.number("comprehensive_trend", "entry_score_c"):
             entry_signal = "C-上升趋势恢复"
         else:
             entry_signal = "等待确认"
 
-        if last["close"] < last["ma60"] and last["volume"] > last["vol20"] * 1.2:
+        if (
+            last["close"] < last["ma60"]
+            and last["volume"]
+            > last["vol20"] * cfg.number("comprehensive_trend", "exit_volume_ratio")
+        ):
             exit_signal = "放量跌破MA60/清仓候选"
         elif last["close"] < last["ma20"] and prev["close"] < prev["ma20"]:
             exit_signal = "连续跌破MA20/减仓候选"
-        elif deviation > 0.15 or (last["rsi"] >= 85 and prev["rsi"] > last["rsi"]):
+        elif deviation > cfg.number("comprehensive_trend", "deviation_risk") or (
+            last["rsi"] >= cfg.number("comprehensive_trend", "overheat_rsi")
+            and prev["rsi"] > last["rsi"]
+        ):
             exit_signal = "短线过热/分批止盈候选"
         else:
             exit_signal = "趋势持有/观察"
 
-        structural_stop = min(float(last["ma20"] * 0.98), float(df["low"].iloc[-10:].min()))
-        atr_stop = float(last["close"] - 2 * last["atr"])
+        structural_stop = min(
+            float(last["ma20"] * cfg.number("comprehensive_trend", "stop_ma_ratio")),
+            float(df["low"].iloc[-10:].min()),
+        )
+        atr_stop = float(
+            last["close"]
+            - cfg.number("comprehensive_trend", "atr_stop_multiple") * last["atr"]
+        )
         stop_price = round(max(0.01, max(structural_stop, atr_stop)), 3)
         risk_pct = round(max(0.0, float(last["close"] - stop_price) / float(last["close"]) * 100), 2)
         return TrendAssessment(
             symbol=symbol,
             score=score,
-            regime=cls._classify(df),
+            regime=cls._classify(df, thresholds=cfg),
             entry_signal=entry_signal,
             exit_signal=exit_signal,
             close=round(float(last["close"]), 3),
@@ -328,21 +382,25 @@ class ComprehensiveTrendStrategy(BaseStrategy):
             reasons=tuple(reasons),
         )
 
-    def run(self) -> list[str]:
-        symbols = self.engine.get_local_symbols()
+    def _run(self) -> list[str]:
+        cfg = self.engine.thresholds
+        min_history = cfg.integer("comprehensive_trend", "min_history")
+        symbols = self.get_eligible_symbols()
         frames: dict[str, pd.DataFrame] = {}
         for symbol in symbols:
             try:
                 df = self.engine.get_ohlcv(symbol)
-                if len(df) >= self.min_history:
-                    frames[symbol] = df.tail(260).copy()
+                if len(df) >= min_history:
+                    frames[symbol] = df.tail(
+                        cfg.integer("comprehensive_trend", "history_limit")
+                    ).copy()
             except Exception as exc:
                 logger.warning(f"[{symbol}] 综合趋势行情读取失败：{exc}")
         if not frames:
             self.last_assessments = []
             return []
 
-        market = self._market_context(frames)
+        market = self._market_context(frames, thresholds=cfg)
         names = self.engine.get_stock_names(list(frames))
         financial_df = self.engine.get_latest_financial_factors(list(frames))
         financial_map = (
@@ -352,7 +410,14 @@ class ComprehensiveTrendStrategy(BaseStrategy):
         for symbol, frame in frames.items():
             try:
                 financial = pd.Series(financial_map[symbol]) if symbol in financial_map else None
-                assessment = self.assess(symbol, frame, market, names.get(symbol, ""), financial)
+                assessment = self.assess(
+                    symbol,
+                    frame,
+                    market,
+                    names.get(symbol, ""),
+                    financial,
+                    thresholds=cfg,
+                )
                 if assessment is not None:
                     assessments.append(assessment)
             except Exception as exc:
@@ -363,8 +428,9 @@ class ComprehensiveTrendStrategy(BaseStrategy):
         selected = [
             item.symbol
             for item in assessments
-            if item.entry_signal != "等待确认" and item.score >= 65
-        ][: self.max_candidates]
+            if item.entry_signal != "等待确认"
+            and item.score >= cfg.number("comprehensive_trend", "selection_score")
+        ][: cfg.integer("comprehensive_trend", "max_candidates")]
         logger.info(
             f"ComprehensiveTrendStrategy 市场宽度={float(market['breadth']):.1%}，"
             f"评估 {len(assessments)} 只，选出 {len(selected)} 只"

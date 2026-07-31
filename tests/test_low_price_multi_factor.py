@@ -61,10 +61,20 @@ def test_low_price_multi_factor_returns_at_most_three_symbols(monkeypatch) -> No
         monkeypatch.setattr(engine, "get_latest_financial_factors", lambda _: pd.DataFrame())
 
         result = strategy.run()
+        combination_ranking = strategy.last_combination_ranking
 
     assert len(result) <= 3
     assert "000005" not in result
     assert set(result).issubset(set(symbols))
+    assert not combination_ranking.empty
+    assert list(combination_ranking.columns) == [
+        "symbol",
+        "factor_rank",
+        "combination_factor_score",
+    ]
+    assert combination_ranking["factor_rank"].tolist() == list(
+        range(1, len(combination_ranking) + 1)
+    )
 
 
 def test_low_price_multi_factor_uses_financial_scores_when_available(monkeypatch) -> None:

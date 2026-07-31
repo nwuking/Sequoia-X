@@ -126,8 +126,8 @@ def test_prediction_notification_contains_probability_and_metrics() -> None:
     assert "0.609" in card_text
 
 
-def test_portfolio_notification_contains_return_and_advice() -> None:
-    """持仓卡片和操作建议卡片应包含收益及风险提示。"""
+def test_portfolio_report_combines_return_and_advice_in_one_message() -> None:
+    """持仓和操作观察应合并为一张飞书卡片。"""
     notifier = FeishuNotifier(make_settings())
     portfolio = pd.DataFrame(
         [
@@ -152,13 +152,67 @@ def test_portfolio_notification_contains_return_and_advice() -> None:
             status_code=200,
             json=MagicMock(return_value={"code": 0}),
         )
-        notifier.send_portfolio(portfolio)
-        notifier.send_portfolio_advice(advice)
+        notifier.send_portfolio_report(portfolio, advice)
 
-    first_body = json.loads(mock_post.call_args_list[0].kwargs["data"])
-    second_body = json.loads(mock_post.call_args_list[1].kwargs["data"])
-    assert "3.53%" in json.dumps(first_body, ensure_ascii=False)
-    assert "20日线防守" in json.dumps(second_body, ensure_ascii=False)
+    assert mock_post.call_count == 1
+    body = json.loads(mock_post.call_args.kwargs["data"])
+    card_text = json.dumps(body, ensure_ascii=False)
+    assert "持仓与下一工作日操作观察" in card_text
+    assert "3.53%" in card_text
+    assert "20日线防守" in card_text
+
+
+def test_system_alert_contains_failure_and_local_data_date() -> None:
+    notifier = FeishuNotifier(make_settings())
+
+    with patch("requests.post") as mock_post:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=MagicMock(return_value={"code": 0}),
+        )
+        notifier.send_system_alert(
+            "baostock 登录或同步失败",
+            "登录异常",
+            data_date="2026-07-30",
+        )
+
+    body = json.loads(mock_post.call_args.kwargs["data"])
+    card_text = json.dumps(body, ensure_ascii=False)
+    assert "baostock 登录或同步失败" in card_text
+    assert "登录异常" in card_text
+    assert "2026-07-30" in card_text
+    assert "继续使用本地数据" in card_text
+
+
+def test_intraday_empty_status_and_paper_trades_are_pushed() -> None:
+    notifier = FeishuNotifier(make_settings())
+    trade = SimpleNamespace(
+        symbol="000001", name="平安银行", action="建仓", shares=3000,
+        price=10.0, amount=30000.0, reason="盘中突破",
+        traded_at="2026-07-30T10:30:00",
+    )
+
+    with patch("requests.post") as mock_post:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=MagicMock(return_value={"code": 0}),
+        )
+        notifier.send_intraday_status(20, 18, 20)
+        notifier.send_paper_trades([trade])
+
+    assert mock_post.call_count == 2
+    status_text = json.dumps(
+        json.loads(mock_post.call_args_list[0].kwargs["data"]), ensure_ascii=False
+    )
+    trade_text = json.dumps(
+        json.loads(mock_post.call_args_list[1].kwargs["data"]), ensure_ascii=False
+    )
+    assert "暂无新的盘中预警信号" in status_text
+    assert "取得实时报价" in status_text
+    assert "模拟交易成交" in trade_text
+    assert "建仓" in trade_text
+    assert "3000股" in trade_text
+    assert "不会修改真实持仓" in trade_text
 
 
 # Feature: sequoia-x-v2, Property 11: 飞书通知使用 ConfigManager 中的 Webhook URL

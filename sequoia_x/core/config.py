@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     paper_trading_db_path: str = "data/paper_trading.db"
     paper_initial_capital: float = 100_000.0
     baostock_daily_request_limit: int = 48000
+    strategy_max_workers: int = 4
+    thresholds_config_path: str = "config/thresholds.ini"
     feishu_webhook_url: str  # 必填字段，缺失时抛出 ValidationError
     strategy_webhooks: dict[str, str] = {}
 

@@ -24,20 +24,21 @@ class LimitUpShakeoutStrategy(BaseStrategy):
     webhook_key: str = "shakeout"
     _MIN_BARS: int = 3  # 至少需要 3 根 K 线（前日、昨日、今日）
 
-    def run(self) -> list[str]:
+    def _run(self) -> list[str]:
         """
         遍历全市场，返回满足涨停洗盘条件的股票代码列表。
 
         Returns:
             满足条件的股票代码列表。
         """
-        symbols = self.engine.get_local_symbols()
+        cfg = self.engine.thresholds
+        symbols = self.get_eligible_symbols()
         selected: list[str] = []
 
         for symbol in symbols:
             try:
                 df = self.engine.get_ohlcv(symbol)
-                if len(df) < self._MIN_BARS:
+                if len(df) < cfg.integer("limit_up_shakeout", "min_bars"):
                     continue
 
                 # 取最近三根 K 线（向量化索引，无 iterrows）
@@ -46,11 +47,15 @@ class LimitUpShakeoutStrategy(BaseStrategy):
                 today = df.iloc[-1]  # 今日
 
                 # 条件 1：昨日涨停
-                limit_up_yesterday = prev1["close"] >= prev2["close"] * 1.095
+                limit_up_yesterday = prev1["close"] >= prev2["close"] * cfg.number(
+                    "limit_up_shakeout", "limit_up_ratio"
+                )
                 # 条件 2：今日收阴
                 bearish_today = today["close"] < today["open"]
                 # 条件 3：今日放量
-                volume_surge = today["volume"] > prev1["volume"] * 2.0
+                volume_surge = today["volume"] > prev1["volume"] * cfg.number(
+                    "limit_up_shakeout", "volume_ratio"
+                )
                 # 条件 4：支撑不破
                 support_hold = today["low"] >= prev1["close"]
 

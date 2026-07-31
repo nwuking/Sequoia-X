@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+from sequoia_x.core.thresholds import ThresholdConfig
 from sequoia_x.monitor import IntradayAlert
 
 
@@ -39,11 +40,17 @@ class PaperAccount:
 class PaperTradingManager:
     """每只股票使用独立本金，根据盘中预警自动模拟建仓和调仓。"""
 
-    def __init__(self, db_path: str, initial_capital: float = 100_000.0) -> None:
+    def __init__(
+        self,
+        db_path: str,
+        initial_capital: float = 100_000.0,
+        thresholds: ThresholdConfig | None = None,
+    ) -> None:
         if initial_capital <= 0:
             raise ValueError("模拟初始本金必须大于 0")
         self.db_path = Path(db_path)
         self.initial_capital = float(initial_capital)
+        self.thresholds = thresholds or ThresholdConfig("config/thresholds.ini")
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_db()
 
@@ -153,14 +160,23 @@ class PaperTradingManager:
                 action, shares = "清仓", current_shares
             elif alert.alert_type == "放量下跌":
                 action = "减持"
-                shares = self._sell_lot(current_shares // 2)
+                shares = self._sell_lot(
+                    int(
+                        current_shares
+                        * self.thresholds.number("paper_trading", "sell_ratio")
+                    )
+                )
                 if current_shares > 0 and shares == 0:
                     shares = current_shares
             elif alert.alert_type in {"盘中突破候选", "尾盘买点确认", "盘中走强"}:
                 action = "建仓" if current_shares == 0 else "增持"
-                ratio = 0.30 if current_shares == 0 else 0.20
+                ratio = self.thresholds.number(
+                    "paper_trading",
+                    "initial_buy_ratio" if current_shares == 0 else "add_buy_ratio",
+                )
                 budget = min(cash, float(row["initial_capital"]) * ratio)
-                shares = int(budget / alert.price / 100) * 100
+                lot_size = self.thresholds.integer("paper_trading", "lot_size")
+                shares = int(budget / alert.price / lot_size) * lot_size
 
             if shares <= 0:
                 conn.execute(
@@ -201,9 +217,9 @@ class PaperTradingManager:
             alert.message, alert.quote_time,
         )
 
-    @staticmethod
-    def _sell_lot(shares: int) -> int:
-        return shares // 100 * 100
+    def _sell_lot(self, shares: int) -> int:
+        lot_size = self.thresholds.integer("paper_trading", "lot_size")
+        return shares // lot_size * lot_size
 
     def accounts(self) -> list[PaperAccount]:
         with self._connect() as conn:
