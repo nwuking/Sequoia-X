@@ -89,6 +89,11 @@ def test_prediction_notification_contains_probability_and_metrics() -> None:
         feishu_webhook_url="https://example.com/default",
         strategy_webhooks={"core_decision": "https://example.com/core-decision"},
     )
+    object.__setattr__(
+        settings,
+        "strategy_webhooks",
+        {"core_decision": "https://example.com/core-decision"},
+    )
     notifier = FeishuNotifier(settings)
     result = SimpleNamespace(
         symbol="600519",
@@ -246,6 +251,7 @@ def test_combined_selection_includes_details_and_splits_by_length() -> None:
             details,
             data_date="2026-07-30",
             stock_names={"000001": "平安银行", "000002": "万科A"},
+            consecutive_counts={"000001": 3, "000002": 1},
             max_chars=1,
         )
 
@@ -261,6 +267,45 @@ def test_combined_selection_includes_details_and_splits_by_length() -> None:
     assert "低价多因子" in all_text
     assert "风险通过" in all_text
     assert "平安银行" in all_text
+    assert "连续入选 3 次" in all_text
+
+
+def test_prediction_tracking_push_contains_accuracy_and_refresh() -> None:
+    notifier = FeishuNotifier(make_settings())
+    report = SimpleNamespace(
+        data_date="2026-07-30",
+        started=("000001",),
+        completed=(),
+        evaluations=(
+            SimpleNamespace(
+                symbol="000001", name="平安银行", horizon=1,
+                predicted_direction="上涨", actual_return=0.02, accurate=True,
+            ),
+        ),
+        predictions=(
+            SimpleNamespace(
+                symbol="000001", name="平安银行", target_horizon=3,
+                remaining_horizon=2, direction="上涨", probability=0.7,
+                expected_return=0.03, refreshed=True,
+            ),
+        ),
+        errors=(),
+    )
+
+    with patch("requests.post") as mock_post:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=MagicMock(return_value={"code": 0}),
+        )
+        notifier.send_prediction_tracking(report)
+
+    card_text = json.dumps(
+        json.loads(mock_post.call_args.kwargs["data"]), ensure_ascii=False
+    )
+    assert "第1个交易日验证" in card_text
+    assert "结果：**准确**" in card_text
+    assert "刷新预测" in card_text
+    assert "距当前剩余：2个交易日" in card_text
 
 
 # Feature: sequoia-x-v2, Property 11: 飞书通知使用 ConfigManager 中的 Webhook URL

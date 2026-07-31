@@ -23,3 +23,11 @@ class ThresholdConfig:
 
     def number(self, section: str, key: str) -> float:
         return self._parser.getfloat(section, key)
+
+    def integers(self, section: str, key: str) -> tuple[int, ...]:
+        """读取英文逗号分隔的整数列表。"""
+        return tuple(
+            int(item.strip())
+            for item in self._parser.get(section, key).split(",")
+            if item.strip()
+        )

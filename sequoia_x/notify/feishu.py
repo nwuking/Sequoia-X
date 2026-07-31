@@ -511,11 +511,13 @@ class FeishuNotifier:
         details: list,
         data_date: str | None,
         stock_names: dict[str, str],
+        consecutive_counts: dict[str, int] | None = None,
         batch_index: int = 1,
         batch_count: int = 1,
     ) -> dict:
         """构建包含完整组合评分明细的候选卡片。"""
         rows = []
+        counts = consecutive_counts or {}
         for item in details:
             xq_code = self._to_xueqiu_code(item.symbol)
             name = stock_names.get(item.symbol, item.symbol)
@@ -527,7 +529,8 @@ class FeishuNotifier:
                 else "跨策略组共振并通过趋势风险过滤"
             )
             rows.append(
-                f"### [{name} {item.symbol}](https://xueqiu.com/S/{xq_code})\n"
+                f"### [{name} {item.symbol}](https://xueqiu.com/S/{xq_code}) "
+                f"｜连续入选 {counts.get(item.symbol, 1)} 次\n"
                 f"**组合评分：** {item.combined_score:.1f}｜"
                 f"**趋势评分：** {item.trend_score:.1f}｜"
                 f"**趋势信号：** {item.trend_signal}\n"
@@ -584,6 +587,7 @@ class FeishuNotifier:
         details: list,
         data_date: str | None,
         stock_names: dict[str, str] | None = None,
+        consecutive_counts: dict[str, int] | None = None,
         max_chars: int = 12000,
         webhook_key: str = "core_decision",
     ) -> None:
@@ -599,6 +603,7 @@ class FeishuNotifier:
                 candidate,
                 data_date,
                 names,
+                consecutive_counts,
                 batch_index=99,
                 batch_count=99,
             )
@@ -616,6 +621,7 @@ class FeishuNotifier:
                 batch,
                 data_date,
                 names,
+                consecutive_counts,
                 batch_index=index,
                 batch_count=len(batches),
             )
@@ -643,6 +649,85 @@ class FeishuNotifier:
             webhook_key,
             f"预测结果飞书推送成功 [{webhook_key}]，共 {len(results)} 只股票",
         )
+
+    def send_prediction_tracking(
+        self,
+        report,
+        max_chars: int = 12000,
+        webhook_key: str = "core_decision",
+    ) -> None:
+        """推送自动多周期预测、到期准确性和剩余周期刷新结果。"""
+        blocks: list[str] = []
+        for item in report.evaluations:
+            blocks.append(
+                f"### ✅ {item.name} {item.symbol}｜第{item.horizon}个交易日验证\n"
+                f"预测方向：**{item.predicted_direction}**｜实际收益：{item.actual_return:+.2%}｜"
+                f"结果：**{'准确' if item.accurate else '不准确'}**"
+            )
+        for item in report.predictions:
+            label = "刷新预测" if item.refreshed else "初始预测"
+            blocks.append(
+                f"### 🔮 {item.name} {item.symbol}｜{label}\n"
+                f"目标：周期第{item.target_horizon}个交易日｜"
+                f"距当前剩余：{item.remaining_horizon}个交易日｜"
+                f"方向：**{item.direction}**｜上涨概率：{item.probability:.1%}｜"
+                f"历史同概率组收益：{item.expected_return:+.2%}"
+            )
+        for error in report.errors:
+            blocks.append(f"### ⚠️ 预测处理异常\n{error}")
+        if not blocks and not report.completed:
+            return
+
+        batches: list[list[str]] = []
+        current: list[str] = []
+
+        def build_payload(items: list[str], index: int, count: int) -> dict:
+            suffix = f"（{index}/{count}）" if count > 1 else ""
+            return {
+                "msg_type": "interactive",
+                "card": {
+                    "header": {
+                        "title": {
+                            "tag": "plain_text",
+                            "content": f"📊 Sequoia-X 多周期预测跟踪{suffix}",
+                        },
+                        "template": "purple",
+                    },
+                    "elements": [
+                        {
+                            "tag": "div",
+                            "text": {
+                                "tag": "lark_md",
+                                "content": (
+                                    f"**数据日期：** {report.data_date}\n"
+                                    f"**新建周期：** {len(report.started)}只｜"
+                                    f"**完成并重置：** {len(report.completed)}只"
+                                ),
+                            },
+                        },
+                        {"tag": "hr"},
+                        {"tag": "div", "text": {"tag": "lark_md", "content": "\n\n".join(items)}},
+                    ],
+                },
+            }
+
+        for block in blocks:
+            candidate = current + [block]
+            if current and len(json.dumps(build_payload(candidate, 99, 99), ensure_ascii=False)) > max_chars:
+                batches.append(current)
+                current = [block]
+            else:
+                current = candidate
+        if current:
+            batches.append(current)
+        if not batches:
+            batches = [["本轮没有新增预测或到期验证。"]]
+        for index, batch in enumerate(batches, start=1):
+            self._post_payload(
+                build_payload(batch, index, len(batches)),
+                webhook_key,
+                f"多周期预测跟踪推送成功 [{webhook_key}] {index}/{len(batches)}",
+            )
 
     def send_intraday_alerts(self, alerts: list, webhook_key: str = "intraday_trading") -> None:
         """推送盘中新预警；同日去重由 IntradayMonitor 负责。"""

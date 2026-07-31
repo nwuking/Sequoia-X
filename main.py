@@ -30,7 +30,7 @@ from sequoia_x.data.engine import DataEngine
 from sequoia_x.notify.feishu import FeishuNotifier
 from sequoia_x.monitor import IntradayMonitor
 from sequoia_x.portfolio import PortfolioAdvisor, PortfolioManager
-from sequoia_x.prediction import EnsemblePredictor
+from sequoia_x.prediction import EnsemblePredictor, PredictionTracker
 from sequoia_x.simulation import PaperTradingManager
 from sequoia_x.strategy.base import BaseStrategy
 from sequoia_x.strategy.high_tight_flag import HighTightFlagStrategy
@@ -43,6 +43,7 @@ from sequoia_x.strategy.rps_breakout import RpsBreakoutStrategy
 from sequoia_x.strategy.private_placement import PrivatePlacementStrategy
 from sequoia_x.strategy.comprehensive_trend import ComprehensiveTrendStrategy
 from sequoia_x.strategy.combiner import StrategyCombiner
+from sequoia_x.strategy.selection_state import update_consecutive_counts
 
 
 def _run_strategies(
@@ -435,6 +436,11 @@ def main() -> None:
             f"重点候选 {len(combined.focus)} 只"
         )
         if combined.focus:
+            consecutive_counts = update_consecutive_counts(
+                settings.combined_streak_path,
+                combined.focus,
+                data_date or date.today().isoformat(),
+            )
             focus_symbols = set(combined.focus)
             focus_details = [
                 item for item in combined.details if item.symbol in focus_symbols
@@ -443,8 +449,55 @@ def main() -> None:
                 details=focus_details,
                 data_date=data_date,
                 stock_names=engine.get_stock_names(list(combined.focus)),
+                consecutive_counts=consecutive_counts,
                 max_chars=engine.thresholds.integer("feishu", "combined_detail_max_chars"),
             )
+        else:
+            update_consecutive_counts(
+                settings.combined_streak_path,
+                (),
+                data_date or date.today().isoformat(),
+            )
+
+        # 重点组合、实际持仓和自选股进入固定10交易日多周期预测跟踪。
+        prediction_symbols = set(combined.focus)
+        portfolio_path = Path(settings.portfolio_csv_path)
+        if portfolio_path.exists():
+            portfolio_frame = pd.read_csv(portfolio_path, dtype={"symbol": str})
+            if not portfolio_frame.empty:
+                portfolio_frame["symbol"] = portfolio_frame["symbol"].astype(str).str.zfill(6)
+                shares_source = (
+                    portfolio_frame["shares"]
+                    if "shares" in portfolio_frame
+                    else pd.Series(0, index=portfolio_frame.index)
+                )
+                shares = pd.to_numeric(shares_source, errors="coerce").fillna(0)
+                watchlist_source = (
+                    portfolio_frame["is_watchlist"]
+                    if "is_watchlist" in portfolio_frame
+                    else pd.Series(False, index=portfolio_frame.index)
+                )
+                watchlist = watchlist_source.astype(str).str.lower().isin({"true", "1"})
+                prediction_symbols.update(portfolio_frame.loc[shares > 0, "symbol"])
+                prediction_symbols.update(portfolio_frame.loc[watchlist, "symbol"])
+        if prediction_symbols and data_date:
+            try:
+                prediction_names = engine.get_stock_names(sorted(prediction_symbols))
+                tracking_report = PredictionTracker(
+                    engine,
+                    settings.prediction_tracking_db_path,
+                ).run(sorted(prediction_symbols), prediction_names, data_date)
+                notifier.send_prediction_tracking(
+                    tracking_report,
+                    max_chars=engine.thresholds.integer("feishu", "combined_detail_max_chars"),
+                )
+            except Exception as exc:
+                logger.exception(f"自动多周期预测跟踪失败：{exc}")
+                notifier.send_system_alert(
+                    title="自动多周期预测跟踪失败",
+                    message=str(exc),
+                    data_date=data_date,
+                )
 
         selection_path = Path(settings.strategy_selection_path)
         selection_path.parent.mkdir(parents=True, exist_ok=True)
