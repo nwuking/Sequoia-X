@@ -1,0 +1,46 @@
+sequoia_x/strategy/selection_state.py
+  s_b00aaa2f884826::t_baf0d763997ceb 8-12,29-31,47
+sequoia_x/core/config.py
+  s_b00aaa2f884826::t_baf0d763997ceb 20-21
+sequoia_x/core/logger.py
+  s_b00aaa2f884826::t_baf0d763997ceb 1,4-7,11-57,76-89
+main.py
+  s_b00aaa2f884826::t_baf0d763997ceb 28,104,108,152,164-165,207,212-213,228-232,349-352,354-365,483-486,517,526-532,556
+.env.example
+  s_b00aaa2f884826::t_baf0d763997ceb 13-17
+tests/test_feishu.py
+  s_b00aaa2f884826::t_974cbb714392a2 311-350
+sequoia_x/simulation/paper.py
+  s_b00aaa2f884826::t_baf0d763997ceb 8,12-14,128,137,220,223-226,228
+sequoia_x/prediction/tracker.py
+  s_b00aaa2f884826::t_baf0d763997ceb 10,13-15,191,242-246,259,291,327,330,337-341,343
+tests/test_logger.py
+  s_b00aaa2f884826::t_840b195571de4d 17,21
+  s_b00aaa2f884826::t_baf0d763997ceb 3-5,22-46
+sequoia_x/notify/feishu.py
+  s_b00aaa2f884826::t_974cbb714392a2 661-664,666-671,676-684,686-687,692-693
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "a6bb4944a71bf0fe2c36680988119f0f5b8c0ea3",
+  "prompts": {},
+  "logical_commit_id": "a6bb4944a71bf0fe2c36680988119f0f5b8c0ea3",
+  "humans": {
+    "h_dc6c9c0bce9380": {
+      "author": "yeyongjun <yeyongjun@bigo.sg>"
+    }
+  },
+  "sessions": {
+    "s_b00aaa2f884826": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fb6ed-ed3d-7921-aee5-7750eec8e8c2",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "yeyongjun <yeyongjun@bigo.sg>",
+      "total_additions": 248,
+      "total_deletions": 26
+    }
+  }
+}
