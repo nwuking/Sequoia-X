@@ -1,0 +1,45 @@
+main.py
+  s_b00aaa2f884826::t_3d67b446fc5af1 443-447
+  s_b00aaa2f884826::t_f715c2e46ea53b 92,99-100
+sequoia_x/strategy/low_price_multi_factor.py
+  s_b00aaa2f884826::t_3d67b446fc5af1 30-31
+tests/test_feishu.py
+  s_b00aaa2f884826::t_f715c2e46ea53b 233-254
+tests/test_low_price_multi_factor.py
+  s_b00aaa2f884826::t_3d67b446fc5af1 13-17
+schedule_strategy.sh
+  s_b00aaa2f884826::t_3668035dac6083 52-67,72-82,87-93,143
+  s_b00aaa2f884826::t_bad189f20a05e2 68-71
+tests/test_main.py
+  s_b00aaa2f884826::t_f715c2e46ea53b 76
+sequoia_x/core/config.py
+  s_b00aaa2f884826::t_f715c2e46ea53b 22
+sequoia_x/strategy/base.py
+  s_b00aaa2f884826::t_3d67b446fc5af1 26
+sequoia_x/notify/feishu.py
+  s_b00aaa2f884826::t_f715c2e46ea53b 33-36,424-429
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "00091ba145c3975a9fba6764dd633ccbfc1d74a3",
+  "prompts": {},
+  "logical_commit_id": "00091ba145c3975a9fba6764dd633ccbfc1d74a3",
+  "humans": {
+    "h_dc6c9c0bce9380": {
+      "author": "yeyongjun <yeyongjun@bigo.sg>"
+    }
+  },
+  "sessions": {
+    "s_b00aaa2f884826": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fb6ed-ed3d-7921-aee5-7750eec8e8c2",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "yeyongjun <yeyongjun@bigo.sg>",
+      "total_additions": 90,
+      "total_deletions": 8
+    }
+  }
+}
