@@ -1,0 +1,61 @@
+tests/test_feishu.py
+  s_b00aaa2f884826::t_3fd4a430bc5170 254,270-308
+  s_b00aaa2f884826::t_49642bc334eef0 92-96
+README.md
+  s_b00aaa2f884826::t_5a22e97d7de19b 94-99
+tests/test_prediction_tracker.py
+  s_b00aaa2f884826::t_49642bc334eef0 1-76
+sequoia_x/prediction/tracker.py
+  s_b00aaa2f884826::t_03e72bdb80b698 1-81,83-93,101-118,128-129,131-136,138,140-146,148-151,156-157,160,162-192,194-205,211-218,221-225,227-253,258-265,267-281,283-293,318-319,321-325
+  s_b00aaa2f884826::t_97e8491f671633 294-317,320
+  s_b00aaa2f884826::t_c444d7dbb5e736 82,94-100,152-155,158-159,161,219-220
+  s_b00aaa2f884826::t_5a6e6d5279b693 119-127,130,137,139,147,193,206-210,226,254-257,266,282
+sequoia_x/core/config.py
+  s_b00aaa2f884826::t_03e72bdb80b698 15
+  s_b00aaa2f884826::t_50d5dec5d7e6cb 12
+config/thresholds.ini
+  s_b00aaa2f884826::t_03e72bdb80b698 290-291
+sequoia_x/strategy/selection_state.py
+  s_b00aaa2f884826::t_50d5dec5d7e6cb 1-41
+sequoia_x/core/thresholds.py
+  s_b00aaa2f884826::t_03e72bdb80b698 26-33
+main.py
+  s_b00aaa2f884826::t_a5214843b15b0e 33,46,439-443,452,454-459,461-468,473,481-500
+  s_b00aaa2f884826::t_9c2f55ffb72173 469-472,474-480
+sequoia_x/prediction/__init__.py
+  s_b00aaa2f884826::t_5a6e6d5279b693 6
+  s_b00aaa2f884826::t_03e72bdb80b698 4
+.env.example
+  s_b00aaa2f884826::t_50d5dec5d7e6cb 15-16
+  s_b00aaa2f884826::t_03e72bdb80b698 13-14,17
+tests/test_selection_state.py
+  s_b00aaa2f884826::t_49642bc334eef0 1-20
+sequoia_x/notify/feishu.py
+  s_b00aaa2f884826::t_923081f8d59d30 653-731
+  s_b00aaa2f884826::t_efec6e2e6a77f2 514,520,532-533,590,606,624
+  s_b00aaa2f884826::t_4bbb9307df2191 652
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "33d615e5d06abb7fad7926f35671e69b7c5b0cd4",
+  "prompts": {},
+  "logical_commit_id": "33d615e5d06abb7fad7926f35671e69b7c5b0cd4",
+  "humans": {
+    "h_dc6c9c0bce9380": {
+      "author": "yeyongjun <yeyongjun@bigo.sg>"
+    }
+  },
+  "sessions": {
+    "s_b00aaa2f884826": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fb6ed-ed3d-7921-aee5-7750eec8e8c2",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "yeyongjun <yeyongjun@bigo.sg>",
+      "total_additions": 701,
+      "total_deletions": 32
+    }
+  }
+}
