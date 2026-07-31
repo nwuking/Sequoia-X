@@ -435,12 +435,15 @@ def main() -> None:
             f"重点候选 {len(combined.focus)} 只"
         )
         if combined.focus:
-            notifier.send(
-                symbols=list(combined.focus),
-                strategy_name="组合决策重点候选",
-                webhook_key="default",
+            focus_symbols = set(combined.focus)
+            focus_details = [
+                item for item in combined.details if item.symbol in focus_symbols
+            ]
+            notifier.send_combined_selection(
+                details=focus_details,
                 data_date=data_date,
                 stock_names=engine.get_stock_names(list(combined.focus)),
+                max_chars=engine.thresholds.integer("feishu", "combined_detail_max_chars"),
             )
 
         selection_path = Path(settings.strategy_selection_path)

@@ -506,6 +506,126 @@ class FeishuNotifier:
         }
         self._post_payload(payload, webhook_key, f"系统告警飞书推送成功 [{webhook_key}]")
 
+    def _build_combined_detail_card(
+        self,
+        details: list,
+        data_date: str | None,
+        stock_names: dict[str, str],
+        batch_index: int = 1,
+        batch_count: int = 1,
+    ) -> dict:
+        """构建包含完整组合评分明细的候选卡片。"""
+        rows = []
+        for item in details:
+            xq_code = self._to_xueqiu_code(item.symbol)
+            name = stock_names.get(item.symbol, item.symbol)
+            factor_rank = str(item.factor_rank) if item.factor_rank is not None else "未进入前10"
+            factor_score = f"{item.factor_score:.3f}" if item.factor_score is not None else "-"
+            reason = (
+                "综合趋势明确买点确认"
+                if item.trend_confirmed
+                else "跨策略组共振并通过趋势风险过滤"
+            )
+            rows.append(
+                f"### [{name} {item.symbol}](https://xueqiu.com/S/{xq_code})\n"
+                f"**组合评分：** {item.combined_score:.1f}｜"
+                f"**趋势评分：** {item.trend_score:.1f}｜"
+                f"**趋势信号：** {item.trend_signal}\n"
+                f"**入选原因：** {reason}｜"
+                f"**风险通过：** {'是' if item.risk_passed else '否'}｜"
+                f"**趋势确认：** {'是' if item.trend_confirmed else '否'}\n"
+                f"**策略来源（{item.vote_count}）：** "
+                f"{', '.join(item.sources) if item.sources else '-'}\n"
+                f"**策略组（{item.family_count}）：** "
+                f"{', '.join(item.families) if item.families else '-'}｜"
+                f"信号得分 {item.signal_score:.1f}\n"
+                f"**低价多因子：** 排名 {factor_rank}｜原始分 {factor_score}｜"
+                f"组合贡献 {item.factor_contribution:.1f}"
+            )
+        suffix = f"（{batch_index}/{batch_count}）" if batch_count > 1 else ""
+        return {
+            "msg_type": "interactive",
+            "card": {
+                "header": {
+                    "title": {
+                        "tag": "plain_text",
+                        "content": f"🎯 Sequoia-X 组合决策重点候选{suffix}",
+                    },
+                    "template": "blue",
+                },
+                "elements": [
+                    {
+                        "tag": "div",
+                        "text": {
+                            "tag": "lark_md",
+                            "content": (
+                                f"**数据日期：** {data_date or '未知'}\n"
+                                f"**本卡候选：** {len(details)} 只"
+                            ),
+                        },
+                    },
+                    {"tag": "hr"},
+                    {"tag": "div", "text": {"tag": "lark_md", "content": "\n\n".join(rows)}},
+                    {
+                        "tag": "note",
+                        "elements": [
+                            {
+                                "tag": "plain_text",
+                                "content": "组合评分仅用于策略研究与候选排序，不构成投资建议。",
+                            }
+                        ],
+                    },
+                ],
+            },
+        }
+
+    def send_combined_selection(
+        self,
+        details: list,
+        data_date: str | None,
+        stock_names: dict[str, str] | None = None,
+        max_chars: int = 12000,
+        webhook_key: str = "default",
+    ) -> None:
+        """按飞书消息长度自动合并或拆分组合候选完整明细。"""
+        if not details:
+            return
+        names = stock_names or {}
+        batches: list[list] = []
+        current: list = []
+        for item in details:
+            candidate = current + [item]
+            payload = self._build_combined_detail_card(
+                candidate,
+                data_date,
+                names,
+                batch_index=99,
+                batch_count=99,
+            )
+            payload_size = len(json.dumps(payload, ensure_ascii=False))
+            if current and payload_size > max_chars:
+                batches.append(current)
+                current = [item]
+            else:
+                current = candidate
+        if current:
+            batches.append(current)
+
+        for index, batch in enumerate(batches, start=1):
+            payload = self._build_combined_detail_card(
+                batch,
+                data_date,
+                names,
+                batch_index=index,
+                batch_count=len(batches),
+            )
+            self._post_payload(
+                payload,
+                webhook_key,
+                f"组合决策明细推送成功 [{webhook_key}] {index}/{len(batches)}，"
+                f"共 {len(batch)} 只",
+            )
+
     def send_prediction(
         self,
         results: list,

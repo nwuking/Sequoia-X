@@ -215,6 +215,54 @@ def test_intraday_empty_status_and_paper_trades_are_pushed() -> None:
     assert "不会修改真实持仓" in trade_text
 
 
+def test_combined_selection_includes_details_and_splits_by_length() -> None:
+    notifier = FeishuNotifier(make_settings())
+    details = [
+        SimpleNamespace(
+            symbol=f"00000{index}",
+            sources=("MaVolumeStrategy", "PrivatePlacementStrategy"),
+            families=("事件驱动", "趋势动量"),
+            vote_count=2,
+            family_count=2,
+            signal_score=30.0,
+            factor_rank=index,
+            factor_score=1.234,
+            factor_contribution=10.0,
+            trend_score=70.0,
+            trend_signal="A-平台放量突破",
+            risk_passed=True,
+            trend_confirmed=True,
+            combined_score=75.0,
+        )
+        for index in (1, 2)
+    ]
+
+    with patch("requests.post") as mock_post:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=MagicMock(return_value={"code": 0}),
+        )
+        notifier.send_combined_selection(
+            details,
+            data_date="2026-07-30",
+            stock_names={"000001": "平安银行", "000002": "万科A"},
+            max_chars=1,
+        )
+
+    assert mock_post.call_count == 2
+    all_text = "".join(
+        json.dumps(json.loads(call.kwargs["data"]), ensure_ascii=False)
+        for call in mock_post.call_args_list
+    )
+    assert "组合决策重点候选（1/2）" in all_text
+    assert "组合评分" in all_text
+    assert "策略来源" in all_text
+    assert "策略组" in all_text
+    assert "低价多因子" in all_text
+    assert "风险通过" in all_text
+    assert "平安银行" in all_text
+
+
 # Feature: sequoia-x-v2, Property 11: 飞书通知使用 ConfigManager 中的 Webhook URL
 @given(
     webhook_url=st.from_regex(r"https://open\.feishu\.cn/open-apis/bot/v2/hook/[a-z0-9\-]{8,36}", fullmatch=True)
