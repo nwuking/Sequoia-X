@@ -308,6 +308,46 @@ def test_prediction_tracking_push_contains_accuracy_and_refresh() -> None:
     assert "距当前剩余：2个交易日" in card_text
 
 
+def test_prediction_tracking_groups_and_deduplicates_each_stock() -> None:
+    """同一股票的多个周期应合并展示，重复的周期结果只发送一次。"""
+    notifier = FeishuNotifier(make_settings())
+    prediction_3d = SimpleNamespace(
+        symbol="000001", name="平安银行", target_horizon=3,
+        remaining_horizon=3, direction="上涨", probability=0.7,
+        expected_return=0.03, refreshed=False,
+    )
+    report = SimpleNamespace(
+        data_date="2026-07-30",
+        started=("000001",),
+        completed=(),
+        evaluations=(),
+        predictions=(
+            prediction_3d,
+            prediction_3d,
+            SimpleNamespace(
+                symbol="000001", name="平安银行", target_horizon=5,
+                remaining_horizon=5, direction="下跌", probability=0.3,
+                expected_return=-0.02, refreshed=False,
+            ),
+        ),
+        errors=(),
+    )
+
+    with patch("requests.post") as mock_post:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=MagicMock(return_value={"code": 0}),
+        )
+        notifier.send_prediction_tracking(report)
+
+    assert mock_post.call_count == 1
+    body = json.loads(mock_post.call_args.kwargs["data"])
+    content = body["card"]["elements"][2]["text"]["content"]
+    assert content.count("### 平安银行 000001") == 1
+    assert content.count("周期第3个交易日") == 1
+    assert content.count("周期第5个交易日") == 1
+
+
 # Feature: sequoia-x-v2, Property 11: 飞书通知使用 ConfigManager 中的 Webhook URL
 @given(
     webhook_url=st.from_regex(r"https://open\.feishu\.cn/open-apis/bot/v2/hook/[a-z0-9\-]{8,36}", fullmatch=True)

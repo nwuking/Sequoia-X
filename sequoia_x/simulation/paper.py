@@ -5,8 +5,11 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+from sequoia_x.core.logger import get_logger
 from sequoia_x.core.thresholds import ThresholdConfig
 from sequoia_x.monitor import IntradayAlert
+
+logger = get_logger(__name__)
 
 
 @dataclass(frozen=True)
@@ -122,6 +125,7 @@ class PaperTradingManager:
                         self.initial_capital, self.initial_capital, price, now,
                     ),
                 )
+        logger.info(f"模拟账户标的同步完成：{len(universe_sources)} 只")
 
     def apply_alerts(self, alerts: list[IntradayAlert]) -> list[PaperTrade]:
         """将新盘中预警转换为模拟交易；同类预警同日只成交一次。"""
@@ -130,6 +134,7 @@ class PaperTradingManager:
             trade = self._apply_alert(alert)
             if trade is not None:
                 trades.append(trade)
+        logger.info(f"模拟交易处理完成：预警 {len(alerts)} 条，成交 {len(trades)} 笔")
         return trades
 
     def _apply_alert(self, alert: IntradayAlert) -> PaperTrade | None:
@@ -212,10 +217,15 @@ class PaperTradingManager:
                     alert.message, alert.alert_type, alert.quote_time,
                 ),
             )
-        return PaperTrade(
+        trade = PaperTrade(
             alert.symbol, alert.name, action, shares, alert.price, amount,
             alert.message, alert.quote_time,
         )
+        logger.info(
+            f"模拟成交：{trade.symbol} {trade.action} {trade.shares} 股，"
+            f"价格 {trade.price:.3f}，金额 {trade.amount:.2f}"
+        )
+        return trade
 
     def _sell_lot(self, shares: int) -> int:
         lot_size = self.thresholds.integer("paper_trading", "lot_size")

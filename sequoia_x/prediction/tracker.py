@@ -7,7 +7,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+from sequoia_x.core.logger import get_logger
 from sequoia_x.prediction.ensemble import EnsemblePredictor
+
+logger = get_logger(__name__)
 
 
 @dataclass(frozen=True)
@@ -185,6 +188,7 @@ class PredictionTracker:
         data_date: str,
     ) -> PredictionTrackingReport:
         universe = list(dict.fromkeys(str(symbol).zfill(6) for symbol in symbols))
+        logger.info(f"预测跟踪开始：数据日期 {data_date}，候选 {len(universe)} 只")
         started: list[str] = []
         completed: list[str] = []
         evaluations: list[PredictionEvaluation] = []
@@ -235,6 +239,11 @@ class PredictionTracker:
                             accurate=accurate,
                         )
                     )
+                    logger.info(
+                        f"预测评估：{cycle['symbol']} 第{horizon}日，"
+                        f"方向={forecast['direction']}，实际收益={actual_return:+.2%}，"
+                        f"结果={'准确' if accurate else '不准确'}"
+                    )
                 checkpoint = max(due)
                 conn.execute(
                     "UPDATE prediction_cycles SET last_checkpoint=? WHERE id=?",
@@ -247,6 +256,7 @@ class PredictionTracker:
                     )
                     completed.append(cycle["symbol"])
                     completed_now.add(cycle["symbol"])
+                    logger.info(f"预测周期完成并重置：{cycle['symbol']} 已到第{checkpoint}个交易日")
                 else:
                     for target in self.horizons:
                         if target > checkpoint:
@@ -278,6 +288,7 @@ class PredictionTracker:
                 )
                 cycle_id = int(cursor.lastrowid)
                 started.append(symbol)
+                logger.info(f"创建预测周期：{symbol}，起始日 {data_date}，收盘价 {close:.3f}")
                 for horizon in self.horizons:
                     new_requests.append((cycle_id, symbol, horizon, horizon))
 
@@ -313,9 +324,10 @@ class PredictionTracker:
                         item for item in all_predictions if item.symbol != symbol or item.refreshed
                     ]
                     errors.append(f"{symbol} 初始预测不完整，已回滚并等待下次重试")
+                    logger.warning(f"{symbol} 初始预测不完整，已回滚并等待下次重试")
                 else:
                     valid_started.append(symbol)
-        return PredictionTrackingReport(
+        report = PredictionTrackingReport(
             data_date=data_date,
             started=tuple(valid_started),
             completed=tuple(completed),
@@ -323,3 +335,9 @@ class PredictionTracker:
             predictions=tuple(all_predictions),
             errors=tuple(errors),
         )
+        logger.info(
+            f"预测跟踪结束：新周期 {len(report.started)}，完成 {len(report.completed)}，"
+            f"评估 {len(report.evaluations)}，预测 {len(report.predictions)}，"
+            f"异常 {len(report.errors)}"
+        )
+        return report

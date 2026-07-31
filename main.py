@@ -25,7 +25,7 @@ from rich.console import Console
 from rich.table import Table
 
 from sequoia_x.core.config import get_settings
-from sequoia_x.core.logger import get_logger
+from sequoia_x.core.logger import configure_file_logging, get_logger
 from sequoia_x.data.engine import DataEngine
 from sequoia_x.notify.feishu import FeishuNotifier
 from sequoia_x.monitor import IntradayMonitor
@@ -101,9 +101,11 @@ def _sync_latest(engine: DataEngine, force: bool, logger, notifier=None) -> bool
 
 def _run_prediction(engine: DataEngine, settings, symbols: list[str], horizon: int) -> None:
     """训练集成模型并输出指定股票的涨跌概率。"""
+    logger = get_logger(__name__)
     normalized = []
     for item in symbols:
         normalized.extend(part.strip() for part in item.split(",") if part.strip())
+    logger.info(f"开始独立概率预测：标的 {len(normalized)} 只，周期 {horizon} 个交易日")
 
     predictor = EnsemblePredictor(engine)
     results, metrics = predictor.predict(normalized, horizon=horizon)
@@ -147,6 +149,7 @@ def _run_prediction(engine: DataEngine, settings, symbols: list[str], horizon: i
     notifier = FeishuNotifier(settings)
     stock_names = engine.get_stock_names([result.symbol for result in results])
     notifier.send_prediction(results, metrics, stock_names=stock_names)
+    logger.info(f"独立概率预测完成：生成 {len(results)} 条结果")
 
 
 def _run_portfolio(
@@ -158,6 +161,8 @@ def _run_portfolio(
     remove_positions: list[str] | None = None,
 ) -> None:
     """更新本地组合、刷新收益并推送持仓与下一工作日建议。"""
+    logger = get_logger(__name__)
+    logger.info("开始刷新自选、持仓和下一工作日操作观察")
     manager = PortfolioManager(engine, settings.portfolio_csv_path)
     if watchlist:
         manager.set_watchlist(watchlist)
@@ -199,10 +204,13 @@ def _run_portfolio(
     advice_report = PortfolioAdvisor(engine, strategy=factor_strategy).advise(portfolio)
     notifier = FeishuNotifier(settings)
     notifier.send_portfolio_report(portfolio, advice_report)
+    logger.info(f"组合报告完成：共 {len(portfolio)} 只股票")
 
 
 def _run_intraday_monitor(engine: DataEngine, settings) -> None:
     """执行独立盘中监控，不同步、写入或修改正式日K。"""
+    logger = get_logger(__name__)
+    logger.info("开始盘中监控和模拟交易")
     monitor = IntradayMonitor(engine, settings)
     alerts = monitor.run()
     simulator = PaperTradingManager(
@@ -217,6 +225,11 @@ def _run_intraday_monitor(engine: DataEngine, settings) -> None:
     )
     trades = simulator.apply_alerts(alerts)
     accounts = simulator.accounts()
+    logger.info(
+        f"盘中监控完成：监控 {len(monitor.latest_universe_sources)} 只，"
+        f"获取报价 {len(monitor.latest_prices)} 只，预警 {len(alerts)} 条，"
+        f"模拟成交 {len(trades)} 笔"
+    )
     notifier = FeishuNotifier(settings)
     console = Console()
     if alerts:
@@ -333,8 +346,23 @@ def main() -> None:
         settings = get_settings()
 
         # 2. 初始化日志
+        log_path = configure_file_logging(
+            settings.log_dir,
+            retention=settings.log_retention_files,
+        )
         logger = get_logger(__name__)
-        logger.info("Sequoia-X V2 启动")
+        logger.info(f"Sequoia-X V2 启动，日志文件：{log_path}")
+
+        mode = (
+            "历史回填" if args.backfill else
+            "独立预测" if args.predict else
+            "财务同步" if args.sync_financials is not None else
+            "盘中监控" if args.intraday else
+            "组合管理" if (args.portfolio or args.set_watchlist or args.set_position
+                           or args.sell_position or args.remove_position) else
+            "日常策略"
+        )
+        logger.info(f"运行模式：{mode}")
 
         # 3. 初始化数据引擎
         engine = DataEngine(settings)
@@ -452,6 +480,10 @@ def main() -> None:
                 consecutive_counts=consecutive_counts,
                 max_chars=engine.thresholds.integer("feishu", "combined_detail_max_chars"),
             )
+            logger.info(
+                "组合重点候选连续次数："
+                + "，".join(f"{symbol}={count}" for symbol, count in consecutive_counts.items())
+            )
         else:
             update_consecutive_counts(
                 settings.combined_streak_path,
@@ -482,6 +514,7 @@ def main() -> None:
                 prediction_symbols.update(portfolio_frame.loc[watchlist, "symbol"])
         if prediction_symbols and data_date:
             try:
+                logger.info(f"启动多周期预测跟踪：共 {len(prediction_symbols)} 只股票")
                 prediction_names = engine.get_stock_names(sorted(prediction_symbols))
                 tracking_report = PredictionTracker(
                     engine,
@@ -490,6 +523,13 @@ def main() -> None:
                 notifier.send_prediction_tracking(
                     tracking_report,
                     max_chars=engine.thresholds.integer("feishu", "combined_detail_max_chars"),
+                )
+                logger.info(
+                    f"多周期预测跟踪完成：新周期 {len(tracking_report.started)}，"
+                    f"完成周期 {len(tracking_report.completed)}，"
+                    f"评估 {len(tracking_report.evaluations)}，"
+                    f"预测 {len(tracking_report.predictions)}，"
+                    f"异常 {len(tracking_report.errors)}"
                 )
             except Exception as exc:
                 logger.exception(f"自动多周期预测跟踪失败：{exc}")
@@ -513,6 +553,7 @@ def main() -> None:
             ),
             encoding="utf-8",
         )
+        logger.info(f"策略结果已写入：{selection_path}")
 
     except Exception:
         try:

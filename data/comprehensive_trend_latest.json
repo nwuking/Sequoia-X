@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-07-31T10:54:45",
+  "generated_at": "2026-07-31T18:12:35",
   "data_date": "2026-07-30",
   "market": {
     "score": 0.0,
-    "ret20": -0.11045773962038397,
+    "ret20": -0.11129571853115527,
     "strong": false,
-    "breadth": 0.43368828654404645
+    "breadth": 0.4408146803791087
   },
   "assessments": [
     {
@@ -25843,52 +25843,6 @@
       ]
     },
     {
-      "symbol": "000838",
-      "score": 25.6,
-      "regime": "上升趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 22.939,
-      "stop_price": 20.412,
-      "position_risk_pct": 11.01,
-      "reasons": [
-        "站上MA20",
-        "站上MA60",
-        "MA20高于MA60",
-        "MA20向上",
-        "MA60向上",
-        "上涨量占优",
-        "缩量回踩",
-        "MACD零轴上多头",
-        "RSI强势未过热",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "300477",
-      "score": 25.6,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 17.552,
-      "stop_price": 15.332,
-      "position_risk_pct": 12.65,
-      "reasons": [
-        "站上MA20",
-        "站上MA60",
-        "MA20向上",
-        "MA60向上",
-        "高低点抬升",
-        "突破放量",
-        "上涨量占优",
-        "MACD零轴上多头",
-        "RSI强势未过热",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "000011",
       "score": 23.9,
       "regime": "震荡整理",
@@ -33212,52 +33166,6 @@
         "上涨量占优",
         "缩量回踩",
         "20日跑赢市场"
-      ]
-    },
-    {
-      "symbol": "002726",
-      "score": 20.6,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "短线过热/分批止盈候选",
-      "close": 10.184,
-      "stop_price": 8.656,
-      "position_risk_pct": 15.0,
-      "reasons": [
-        "站上MA20",
-        "站上MA60",
-        "MA20高于MA60",
-        "MA20向上",
-        "高低点抬升",
-        "OBV创新高",
-        "上涨量占优",
-        "MACD零轴上多头",
-        "RSI强势未过热",
-        "20日跑赢市场",
-        "风险：偏离MA20超过15%",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "300020",
-      "score": 20.0,
-      "regime": "洗盘候选",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 24.58,
-      "stop_price": 21.386,
-      "position_risk_pct": 12.99,
-      "reasons": [
-        "站上MA20",
-        "站上MA60",
-        "MA20向上",
-        "MA60向上",
-        "上涨量占优",
-        "缩量回踩",
-        "MACD零轴上多头",
-        "RSI强势未过热",
-        "20日跑赢市场",
-        "风险：ST股票"
       ]
     },
     {
@@ -42066,111 +41974,6 @@
       ]
     },
     {
-      "symbol": "002528",
-      "score": 14.4,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 29.836,
-      "stop_price": 26.825,
-      "position_risk_pct": 10.09,
-      "reasons": [
-        "站上MA20",
-        "站上MA60",
-        "MA20向上",
-        "上涨量占优",
-        "缩量回踩",
-        "MACD零轴上多头",
-        "RSI强势未过热",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "002538",
-      "score": 14.4,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 34.641,
-      "stop_price": 32.401,
-      "position_risk_pct": 6.47,
-      "reasons": [
-        "站上MA20",
-        "站上MA60",
-        "MA20高于MA60",
-        "MA20向上",
-        "缩量回踩",
-        "MACD零轴上多头",
-        "RSI强势未过热",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "002542",
-      "score": 14.4,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 30.222,
-      "stop_price": 26.77,
-      "position_risk_pct": 11.42,
-      "reasons": [
-        "站上MA20",
-        "站上MA60",
-        "MA20向上",
-        "上涨量占优",
-        "缩量回踩",
-        "MACD零轴上多头",
-        "RSI强势未过热",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "300419",
-      "score": 14.4,
-      "regime": "主力撤离候选",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 54.76,
-      "stop_price": 53.068,
-      "position_risk_pct": 3.09,
-      "reasons": [
-        "站上MA60",
-        "MA20高于MA60",
-        "MA20向上",
-        "MA60向上",
-        "突破放量",
-        "上涨量占优",
-        "MACD零轴上多头",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "600079",
-      "score": 14.4,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 213.749,
-      "stop_price": 204.745,
-      "position_risk_pct": 4.21,
-      "reasons": [
-        "站上MA20",
-        "站上MA60",
-        "MA20高于MA60",
-        "MA20向上",
-        "缩量回踩",
-        "MACD零轴上多头",
-        "RSI强势未过热",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "001205",
       "score": 12.2,
       "regime": "震荡整理",
@@ -43617,6 +43420,20 @@
       ]
     },
     {
+      "symbol": "002256",
+      "score": 11.1,
+      "regime": "阴跌趋势",
+      "entry_signal": "等待确认",
+      "exit_signal": "趋势持有/观察",
+      "close": 48.875,
+      "stop_price": 44.155,
+      "position_risk_pct": 9.66,
+      "reasons": [
+        "上涨量占优",
+        "20日跑赢市场"
+      ]
+    },
+    {
       "symbol": "002259",
       "score": 11.1,
       "regime": "阴跌趋势",
@@ -44201,6 +44018,20 @@
       "position_risk_pct": 11.64,
       "reasons": [
         "上涨量占优",
+        "20日跑赢市场"
+      ]
+    },
+    {
+      "symbol": "002739",
+      "score": 11.1,
+      "regime": "震荡整理",
+      "entry_signal": "等待确认",
+      "exit_signal": "连续跌破MA20/减仓候选",
+      "close": 25.932,
+      "stop_price": 25.75,
+      "position_risk_pct": 0.7,
+      "reasons": [
+        "MA20高于MA60",
         "20日跑赢市场"
       ]
     },
@@ -48685,6 +48516,20 @@
       ]
     },
     {
+      "symbol": "603310",
+      "score": 11.1,
+      "regime": "下跌反弹",
+      "entry_signal": "等待确认",
+      "exit_signal": "连续跌破MA20/减仓候选",
+      "close": 15.258,
+      "stop_price": 14.742,
+      "position_risk_pct": 3.38,
+      "reasons": [
+        "缩量回踩",
+        "20日跑赢市场"
+      ]
+    },
+    {
       "symbol": "603311",
       "score": 11.1,
       "regime": "震荡整理",
@@ -49637,6 +49482,20 @@
       ]
     },
     {
+      "symbol": "688088",
+      "score": 11.1,
+      "regime": "下跌反弹",
+      "entry_signal": "等待确认",
+      "exit_signal": "连续跌破MA20/减仓候选",
+      "close": 32.666,
+      "stop_price": 30.787,
+      "position_risk_pct": 5.75,
+      "reasons": [
+        "上涨量占优",
+        "20日跑赢市场"
+      ]
+    },
+    {
       "symbol": "688092",
       "score": 11.1,
       "regime": "阴跌趋势",
@@ -50418,69 +50277,6 @@
       "reasons": [
         "MA60向上",
         "上涨量占优"
-      ]
-    },
-    {
-      "symbol": "300295",
-      "score": 10.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 44.731,
-      "stop_price": 40.682,
-      "position_risk_pct": 9.05,
-      "reasons": [
-        "站上MA20",
-        "站上MA60",
-        "MA20向上",
-        "高低点抬升",
-        "突破放量",
-        "上涨量占优",
-        "MACD零轴上多头",
-        "RSI强势未过热",
-        "20日跑赢市场",
-        "风险：高量长上影",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "300462",
-      "score": 8.9,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 23.195,
-      "stop_price": 20.905,
-      "position_risk_pct": 9.87,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "高低点抬升",
-        "上涨量占优",
-        "缩量回踩",
-        "RSI强势未过热",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "600423",
-      "score": 8.9,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 7.552,
-      "stop_price": 6.908,
-      "position_risk_pct": 8.53,
-      "reasons": [
-        "站上MA20",
-        "站上MA60",
-        "MA20向上",
-        "缩量回踩",
-        "MACD零轴上多头",
-        "RSI强势未过热",
-        "20日跑赢市场",
-        "风险：ST股票"
       ]
     },
     {
@@ -51758,6 +51554,19 @@
       ]
     },
     {
+      "symbol": "000036",
+      "score": 5.6,
+      "regime": "阴跌趋势",
+      "entry_signal": "等待确认",
+      "exit_signal": "连续跌破MA20/减仓候选",
+      "close": 43.184,
+      "stop_price": 41.729,
+      "position_risk_pct": 3.37,
+      "reasons": [
+        "20日跑赢市场"
+      ]
+    },
+    {
       "symbol": "000060",
       "score": 5.6,
       "regime": "阴跌趋势",
@@ -52028,6 +51837,19 @@
       "position_risk_pct": 13.45,
       "reasons": [
         "上涨量占优"
+      ]
+    },
+    {
+      "symbol": "000692",
+      "score": 5.6,
+      "regime": "阴跌趋势",
+      "entry_signal": "等待确认",
+      "exit_signal": "连续跌破MA20/减仓候选",
+      "close": 32.446,
+      "stop_price": 30.653,
+      "position_risk_pct": 5.53,
+      "reasons": [
+        "20日跑赢市场"
       ]
     },
     {
@@ -53029,19 +52851,6 @@
       "position_risk_pct": 7.55,
       "reasons": [
         "MA60向上"
-      ]
-    },
-    {
-      "symbol": "002256",
-      "score": 5.6,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 48.875,
-      "stop_price": 44.155,
-      "position_risk_pct": 9.66,
-      "reasons": [
-        "上涨量占优"
       ]
     },
     {
@@ -54069,19 +53878,6 @@
       "position_risk_pct": 10.57,
       "reasons": [
         "上涨量占优"
-      ]
-    },
-    {
-      "symbol": "002739",
-      "score": 5.6,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 25.932,
-      "stop_price": 25.75,
-      "position_risk_pct": 0.7,
-      "reasons": [
-        "MA20高于MA60"
       ]
     },
     {
@@ -55759,6 +55555,19 @@
       "position_risk_pct": 3.32,
       "reasons": [
         "上涨量占优"
+      ]
+    },
+    {
+      "symbol": "300307",
+      "score": 5.6,
+      "regime": "阴跌趋势",
+      "entry_signal": "等待确认",
+      "exit_signal": "连续跌破MA20/减仓候选",
+      "close": 14.585,
+      "stop_price": 13.199,
+      "position_risk_pct": 9.5,
+      "reasons": [
+        "20日跑赢市场"
       ]
     },
     {
@@ -61534,19 +61343,6 @@
       ]
     },
     {
-      "symbol": "603310",
-      "score": 5.6,
-      "regime": "下跌反弹",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 15.258,
-      "stop_price": 14.742,
-      "position_risk_pct": 3.38,
-      "reasons": [
-        "缩量回踩"
-      ]
-    },
-    {
       "symbol": "603312",
       "score": 5.6,
       "regime": "下跌反弹",
@@ -62116,6 +61912,19 @@
       "position_risk_pct": 13.0,
       "reasons": [
         "上涨量占优"
+      ]
+    },
+    {
+      "symbol": "603721",
+      "score": 5.6,
+      "regime": "阴跌趋势",
+      "entry_signal": "等待确认",
+      "exit_signal": "放量跌破MA60/清仓候选",
+      "close": 21.246,
+      "stop_price": 18.919,
+      "position_risk_pct": 10.95,
+      "reasons": [
+        "20日跑赢市场"
       ]
     },
     {
@@ -63193,19 +63002,6 @@
       "close": 38.086,
       "stop_price": 37.713,
       "position_risk_pct": 0.98,
-      "reasons": [
-        "上涨量占优"
-      ]
-    },
-    {
-      "symbol": "688088",
-      "score": 5.6,
-      "regime": "下跌反弹",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 32.666,
-      "stop_price": 30.787,
-      "position_risk_pct": 5.75,
       "reasons": [
         "上涨量占优"
       ]
@@ -65122,63 +64918,6 @@
       ]
     },
     {
-      "symbol": "000639",
-      "score": 3.3,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 12.752,
-      "stop_price": 11.158,
-      "position_risk_pct": 12.5,
-      "reasons": [
-        "站上MA20",
-        "站上MA60",
-        "MA20向上",
-        "缩量回踩",
-        "MACD零轴上多头",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "002512",
-      "score": 3.3,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 25.568,
-      "stop_price": 22.424,
-      "position_risk_pct": 12.3,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "突破放量",
-        "上涨量占优",
-        "RSI强势未过热",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "600365",
-      "score": 3.3,
-      "regime": "底部吸筹候选",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 5.412,
-      "stop_price": 4.999,
-      "position_risk_pct": 7.64,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "缩量回踩",
-        "MACD零轴上多头",
-        "RSI强势未过热",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "000032",
       "score": 1.1,
       "regime": "阴跌趋势",
@@ -66750,35 +66489,6 @@
       "reasons": []
     },
     {
-      "symbol": "000010",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 16.268,
-      "stop_price": 15.083,
-      "position_risk_pct": 7.29,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "000016",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 47.201,
-      "stop_price": 44.334,
-      "position_risk_pct": 6.07,
-      "reasons": [
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "000034",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -66793,17 +66503,6 @@
       ]
     },
     {
-      "symbol": "000036",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 43.184,
-      "stop_price": 41.729,
-      "position_risk_pct": 3.37,
-      "reasons": []
-    },
-    {
       "symbol": "000050",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -66813,22 +66512,6 @@
       "stop_price": 38.868,
       "position_risk_pct": 6.36,
       "reasons": []
-    },
-    {
-      "symbol": "000056",
-      "score": 0.0,
-      "regime": "洗盘候选",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 6.381,
-      "stop_price": 5.464,
-      "position_risk_pct": 14.38,
-      "reasons": [
-        "站上MA60",
-        "MA20高于MA60",
-        "MA60向上",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "000066",
@@ -66845,22 +66528,6 @@
       ]
     },
     {
-      "symbol": "000078",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 15.805,
-      "stop_price": 15.205,
-      "position_risk_pct": 3.8,
-      "reasons": [
-        "MA20高于MA60",
-        "MA20向上",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "000417",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -66870,23 +66537,6 @@
       "stop_price": 73.938,
       "position_risk_pct": 9.75,
       "reasons": []
-    },
-    {
-      "symbol": "000488",
-      "score": 0.0,
-      "regime": "底部吸筹候选",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 15.116,
-      "stop_price": 14.341,
-      "position_risk_pct": 5.13,
-      "reasons": [
-        "MA20向上",
-        "上涨量占优",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "000521",
@@ -66946,49 +66596,6 @@
       ]
     },
     {
-      "symbol": "000609",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 44.414,
-      "stop_price": 42.278,
-      "position_risk_pct": 4.81,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "000610",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 12.638,
-      "stop_price": 11.363,
-      "position_risk_pct": 10.09,
-      "reasons": [
-        "站上MA20",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "000615",
-      "score": 0.0,
-      "regime": "下跌反弹",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 18.159,
-      "stop_price": 16.845,
-      "position_risk_pct": 7.24,
-      "reasons": [
-        "上涨量占优",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "000620",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -66998,22 +66605,6 @@
       "stop_price": 2.979,
       "position_risk_pct": 1.18,
       "reasons": []
-    },
-    {
-      "symbol": "000632",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 17.061,
-      "stop_price": 14.755,
-      "position_risk_pct": 13.51,
-      "reasons": [
-        "站上MA20",
-        "RSI强势未过热",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "000657",
@@ -67041,61 +66632,6 @@
       "reasons": []
     },
     {
-      "symbol": "000669",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 10.848,
-      "stop_price": 10.458,
-      "position_risk_pct": 3.6,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "000677",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 22.368,
-      "stop_price": 20.284,
-      "position_risk_pct": 9.32,
-      "reasons": [
-        "MA20向上",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "000692",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 32.446,
-      "stop_price": 30.653,
-      "position_risk_pct": 5.53,
-      "reasons": []
-    },
-    {
-      "symbol": "000698",
-      "score": 0.0,
-      "regime": "底部吸筹候选",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 7.344,
-      "stop_price": 6.896,
-      "position_risk_pct": 6.11,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "000700",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -67110,40 +66646,6 @@
       ]
     },
     {
-      "symbol": "000711",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 33.914,
-      "stop_price": 31.588,
-      "position_risk_pct": 6.86,
-      "reasons": [
-        "MA20向上",
-        "MA60向上",
-        "上涨量占优",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "000752",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 31.728,
-      "stop_price": 30.82,
-      "position_risk_pct": 2.86,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "上涨量占优",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "000782",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -67155,19 +66657,6 @@
       "reasons": []
     },
     {
-      "symbol": "000793",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 21.541,
-      "stop_price": 21.049,
-      "position_risk_pct": 2.28,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "000810",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -67177,52 +66666,6 @@
       "stop_price": 51.0,
       "position_risk_pct": 2.61,
       "reasons": []
-    },
-    {
-      "symbol": "000820",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 3.851,
-      "stop_price": 3.472,
-      "position_risk_pct": 9.83,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "缩量回踩",
-        "RSI强势未过热",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "000821",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 13.157,
-      "stop_price": 12.056,
-      "position_risk_pct": 8.37,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "000826",
-      "score": 0.0,
-      "regime": "下跌反弹",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 10.453,
-      "stop_price": 9.0,
-      "position_risk_pct": 13.9,
-      "reasons": [
-        "突破放量",
-        "上涨量占优",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "000837",
@@ -67256,56 +66699,6 @@
       "stop_price": 7.259,
       "position_risk_pct": 12.84,
       "reasons": []
-    },
-    {
-      "symbol": "000903",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 15.227,
-      "stop_price": 13.82,
-      "position_risk_pct": 9.24,
-      "reasons": [
-        "上涨量占优",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "000909",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 6.602,
-      "stop_price": 5.698,
-      "position_risk_pct": 13.7,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "000911",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 5.838,
-      "stop_price": 5.397,
-      "position_risk_pct": 7.55,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "上涨量占优",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "000920",
@@ -67699,21 +67092,6 @@
       "reasons": []
     },
     {
-      "symbol": "002024",
-      "score": 0.0,
-      "regime": "主力撤离候选",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 83.825,
-      "stop_price": 81.712,
-      "position_risk_pct": 2.52,
-      "reasons": [
-        "MA20向上",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "002026",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -67747,19 +67125,6 @@
       "stop_price": 417.127,
       "position_risk_pct": 1.55,
       "reasons": []
-    },
-    {
-      "symbol": "002055",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 30.338,
-      "stop_price": 28.662,
-      "position_risk_pct": 5.52,
-      "reasons": [
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "002057",
@@ -67817,36 +67182,6 @@
       "reasons": []
     },
     {
-      "symbol": "002082",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 28.324,
-      "stop_price": 25.84,
-      "position_risk_pct": 8.77,
-      "reasons": [
-        "上涨量占优",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "002102",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 20.818,
-      "stop_price": 20.634,
-      "position_risk_pct": 0.89,
-      "reasons": [
-        "MA20高于MA60",
-        "MA20向上",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "002106",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -67856,38 +67191,6 @@
       "stop_price": 35.001,
       "position_risk_pct": 7.41,
       "reasons": []
-    },
-    {
-      "symbol": "002109",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 9.967,
-      "stop_price": 9.496,
-      "position_risk_pct": 4.73,
-      "reasons": [
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "002122",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 19.74,
-      "stop_price": 18.808,
-      "position_risk_pct": 4.72,
-      "reasons": [
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "002126",
@@ -67964,23 +67267,6 @@
       ]
     },
     {
-      "symbol": "002168",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 53.911,
-      "stop_price": 51.065,
-      "position_risk_pct": 5.28,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "002169",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -68003,66 +67289,6 @@
       "reasons": []
     },
     {
-      "symbol": "002175",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 14.938,
-      "stop_price": 14.614,
-      "position_risk_pct": 2.17,
-      "reasons": [
-        "MA20高于MA60",
-        "MA20向上",
-        "上涨量占优",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "002193",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 7.799,
-      "stop_price": 6.806,
-      "position_risk_pct": 12.73,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "002198",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 16.531,
-      "stop_price": 14.852,
-      "position_risk_pct": 10.16,
-      "reasons": [
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "002207",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 11.456,
-      "stop_price": 9.59,
-      "position_risk_pct": 16.29,
-      "reasons": [
-        "缩量回踩",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "002208",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -68077,50 +67303,6 @@
       ]
     },
     {
-      "symbol": "002211",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 5.577,
-      "stop_price": 4.791,
-      "position_risk_pct": 14.09,
-      "reasons": [
-        "站上MA20",
-        "MA60向上",
-        "突破放量",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "002214",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 66.129,
-      "stop_price": 58.556,
-      "position_risk_pct": 11.45,
-      "reasons": [
-        "上涨量占优",
-        "缩量回踩",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "002217",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 8.07,
-      "stop_price": 7.841,
-      "position_risk_pct": 2.84,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "002225",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -68130,19 +67312,6 @@
       "stop_price": 6.551,
       "position_risk_pct": 7.69,
       "reasons": []
-    },
-    {
-      "symbol": "002227",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 12.234,
-      "stop_price": 10.86,
-      "position_risk_pct": 11.23,
-      "reasons": [
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "002235",
@@ -68261,49 +67430,6 @@
       ]
     },
     {
-      "symbol": "002305",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 6.444,
-      "stop_price": 6.008,
-      "position_risk_pct": 6.77,
-      "reasons": [
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "002306",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 6.929,
-      "stop_price": 6.512,
-      "position_risk_pct": 6.02,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "002323",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 9.932,
-      "stop_price": 9.389,
-      "position_risk_pct": 5.47,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "002331",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -68336,21 +67462,6 @@
       "position_risk_pct": 0.45,
       "reasons": [
         "风险：跌破20日平台"
-      ]
-    },
-    {
-      "symbol": "002360",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 34.207,
-      "stop_price": 32.839,
-      "position_risk_pct": 4.0,
-      "reasons": [
-        "MA20向上",
-        "20日跑赢市场",
-        "风险：ST股票"
       ]
     },
     {
@@ -68423,23 +67534,6 @@
       "reasons": []
     },
     {
-      "symbol": "002424",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 49.308,
-      "stop_price": 47.145,
-      "position_risk_pct": 4.39,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "002429",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -68463,22 +67557,6 @@
       "stop_price": 54.498,
       "position_risk_pct": 4.33,
       "reasons": []
-    },
-    {
-      "symbol": "002431",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 12.699,
-      "stop_price": 11.813,
-      "position_risk_pct": 6.98,
-      "reasons": [
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "002446",
@@ -68583,23 +67661,6 @@
       "reasons": []
     },
     {
-      "symbol": "002485",
-      "score": 0.0,
-      "regime": "洗盘候选",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 15.321,
-      "stop_price": 14.315,
-      "position_risk_pct": 6.56,
-      "reasons": [
-        "站上MA60",
-        "MA20高于MA60",
-        "MA60向上",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "002487",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -68622,34 +67683,6 @@
       "reasons": [
         "上涨量占优",
         "风险：跌破20日平台"
-      ]
-    },
-    {
-      "symbol": "002501",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 9.27,
-      "stop_price": 8.968,
-      "position_risk_pct": 3.25,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "002514",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 11.723,
-      "stop_price": 9.325,
-      "position_risk_pct": 20.46,
-      "reasons": [
-        "上涨量占优",
-        "风险：ST股票"
       ]
     },
     {
@@ -68678,22 +67711,6 @@
       "reasons": []
     },
     {
-      "symbol": "002547",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 14.872,
-      "stop_price": 12.565,
-      "position_risk_pct": 15.52,
-      "reasons": [
-        "站上MA20",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "002559",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -68705,47 +67722,6 @@
       "reasons": []
     },
     {
-      "symbol": "002569",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 19.959,
-      "stop_price": 19.008,
-      "position_risk_pct": 4.76,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "002581",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 9.527,
-      "stop_price": 9.209,
-      "position_risk_pct": 3.33,
-      "reasons": [
-        "MA20向上",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "002586",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 21.19,
-      "stop_price": 20.57,
-      "position_risk_pct": 2.93,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "002587",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -68755,36 +67731,6 @@
       "stop_price": 37.263,
       "position_risk_pct": 7.81,
       "reasons": []
-    },
-    {
-      "symbol": "002592",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 15.887,
-      "stop_price": 14.34,
-      "position_risk_pct": 9.74,
-      "reasons": [
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "002598",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 16.109,
-      "stop_price": 15.02,
-      "position_risk_pct": 6.76,
-      "reasons": [
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "002600",
@@ -68809,19 +67755,6 @@
       "reasons": []
     },
     {
-      "symbol": "002620",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 17.49,
-      "stop_price": 15.822,
-      "position_risk_pct": 9.54,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "002628",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -68833,21 +67766,6 @@
       "reasons": []
     },
     {
-      "symbol": "002630",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 9.449,
-      "stop_price": 9.331,
-      "position_risk_pct": 1.25,
-      "reasons": [
-        "上涨量占优",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "002631",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -68857,21 +67775,6 @@
       "stop_price": 25.596,
       "position_risk_pct": 4.06,
       "reasons": []
-    },
-    {
-      "symbol": "002634",
-      "score": 0.0,
-      "regime": "下跌反弹",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 28.049,
-      "stop_price": 24.946,
-      "position_risk_pct": 11.06,
-      "reasons": [
-        "上涨量占优",
-        "缩量回踩",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "002635",
@@ -68916,22 +67819,6 @@
       "stop_price": 76.066,
       "position_risk_pct": 1.28,
       "reasons": []
-    },
-    {
-      "symbol": "002650",
-      "score": 0.0,
-      "regime": "下跌反弹",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 48.195,
-      "stop_price": 43.013,
-      "position_risk_pct": 10.75,
-      "reasons": [
-        "突破放量",
-        "上涨量占优",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "002652",
@@ -68981,22 +67868,6 @@
       "reasons": []
     },
     {
-      "symbol": "002667",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "短线过热/分批止盈候选",
-      "close": 40.66,
-      "stop_price": 33.49,
-      "position_risk_pct": 17.63,
-      "reasons": [
-        "站上MA20",
-        "20日跑赢市场",
-        "风险：偏离MA20超过15%",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "002685",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -69006,34 +67877,6 @@
       "stop_price": 13.232,
       "position_risk_pct": 10.22,
       "reasons": []
-    },
-    {
-      "symbol": "002689",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 9.762,
-      "stop_price": 9.305,
-      "position_risk_pct": 4.68,
-      "reasons": [
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "002691",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 6.45,
-      "stop_price": 5.662,
-      "position_risk_pct": 12.21,
-      "reasons": [
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "002693",
@@ -69047,20 +67890,6 @@
       "reasons": []
     },
     {
-      "symbol": "002694",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 8.03,
-      "stop_price": 7.043,
-      "position_risk_pct": 12.29,
-      "reasons": [
-        "缩量回踩",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "002706",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -69070,53 +67899,6 @@
       "stop_price": 111.322,
       "position_risk_pct": 3.07,
       "reasons": []
-    },
-    {
-      "symbol": "002717",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 13.486,
-      "stop_price": 13.082,
-      "position_risk_pct": 3.0,
-      "reasons": [
-        "MA20向上",
-        "上涨量占优",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "002719",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 9.618,
-      "stop_price": 8.449,
-      "position_risk_pct": 12.16,
-      "reasons": [
-        "站上MA20",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "002731",
-      "score": 0.0,
-      "regime": "下跌反弹",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 3.619,
-      "stop_price": 2.899,
-      "position_risk_pct": 19.89,
-      "reasons": [
-        "突破放量",
-        "上涨量占优",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "002734",
@@ -69152,20 +67934,6 @@
       "reasons": []
     },
     {
-      "symbol": "002759",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 38.802,
-      "stop_price": 30.914,
-      "position_risk_pct": 20.33,
-      "reasons": [
-        "上涨量占优",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "002772",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -69198,19 +67966,6 @@
       "position_risk_pct": 0.32,
       "reasons": [
         "风险：跌破20日平台"
-      ]
-    },
-    {
-      "symbol": "002789",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 15.228,
-      "stop_price": 13.519,
-      "position_risk_pct": 11.23,
-      "reasons": [
-        "风险：ST股票"
       ]
     },
     {
@@ -69269,36 +68024,6 @@
       "reasons": [
         "上涨量占优",
         "风险：跌破20日平台"
-      ]
-    },
-    {
-      "symbol": "002816",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 23.127,
-      "stop_price": 20.295,
-      "position_risk_pct": 12.24,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "002822",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 6.56,
-      "stop_price": 5.974,
-      "position_risk_pct": 8.93,
-      "reasons": [
-        "站上MA60",
-        "MA20高于MA60",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
       ]
     },
     {
@@ -69385,20 +68110,6 @@
       "reasons": []
     },
     {
-      "symbol": "002856",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 16.383,
-      "stop_price": 12.995,
-      "position_risk_pct": 20.68,
-      "reasons": [
-        "MA60向上",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "002857",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -69421,23 +68132,6 @@
       "reasons": []
     },
     {
-      "symbol": "002872",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 7.436,
-      "stop_price": 6.878,
-      "position_risk_pct": 7.5,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "002875",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -69458,22 +68152,6 @@
       "stop_price": 43.252,
       "position_risk_pct": 12.11,
       "reasons": []
-    },
-    {
-      "symbol": "002883",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 25.396,
-      "stop_price": 24.275,
-      "position_risk_pct": 4.41,
-      "reasons": [
-        "上涨量占优",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "002897",
@@ -69557,21 +68235,6 @@
       "stop_price": 15.769,
       "position_risk_pct": 7.28,
       "reasons": []
-    },
-    {
-      "symbol": "002932",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 57.391,
-      "stop_price": 54.748,
-      "position_risk_pct": 4.61,
-      "reasons": [
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "002938",
@@ -69684,22 +68347,6 @@
       "reasons": [
         "上涨量占优",
         "风险：跌破20日平台"
-      ]
-    },
-    {
-      "symbol": "002977",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 36.279,
-      "stop_price": 31.688,
-      "position_risk_pct": 12.65,
-      "reasons": [
-        "MA20向上",
-        "上涨量占优",
-        "20日跑赢市场",
-        "风险：ST股票"
       ]
     },
     {
@@ -69892,23 +68539,6 @@
       ]
     },
     {
-      "symbol": "300010",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 11.749,
-      "stop_price": 10.286,
-      "position_risk_pct": 12.45,
-      "reasons": [
-        "站上MA20",
-        "突破放量",
-        "上涨量占优",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "300013",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -69929,37 +68559,6 @@
       "stop_price": 106.488,
       "position_risk_pct": 6.07,
       "reasons": []
-    },
-    {
-      "symbol": "300027",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 25.978,
-      "stop_price": 23.609,
-      "position_risk_pct": 9.12,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "300044",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 38.349,
-      "stop_price": 35.071,
-      "position_risk_pct": 8.55,
-      "reasons": [
-        "MA20向上",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "300050",
@@ -70009,20 +68608,6 @@
       ]
     },
     {
-      "symbol": "300068",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 10.56,
-      "stop_price": 9.593,
-      "position_risk_pct": 9.16,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "300069",
       "score": 0.0,
       "regime": "震荡整理",
@@ -70037,20 +68622,6 @@
       ]
     },
     {
-      "symbol": "300076",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 34.661,
-      "stop_price": 31.336,
-      "position_risk_pct": 9.59,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "300077",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -70062,20 +68633,6 @@
       "reasons": [
         "上涨量占优",
         "风险：跌破20日平台"
-      ]
-    },
-    {
-      "symbol": "300081",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 13.952,
-      "stop_price": 13.445,
-      "position_risk_pct": 3.63,
-      "reasons": [
-        "突破放量",
-        "风险：ST股票"
       ]
     },
     {
@@ -70099,50 +68656,6 @@
       "stop_price": 286.159,
       "position_risk_pct": 10.6,
       "reasons": []
-    },
-    {
-      "symbol": "300087",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 88.742,
-      "stop_price": 84.861,
-      "position_risk_pct": 4.37,
-      "reasons": [
-        "站上MA20",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "300091",
-      "score": 0.0,
-      "regime": "下跌反弹",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 33.581,
-      "stop_price": 31.923,
-      "position_risk_pct": 4.94,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "300096",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 39.965,
-      "stop_price": 38.838,
-      "position_risk_pct": 2.82,
-      "reasons": [
-        "上涨量占优",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "300101",
@@ -70217,38 +68730,6 @@
       "reasons": []
     },
     {
-      "symbol": "300123",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 24.507,
-      "stop_price": 21.572,
-      "position_risk_pct": 11.97,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "MA60向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "300125",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 46.37,
-      "stop_price": 41.254,
-      "position_risk_pct": 11.03,
-      "reasons": [
-        "上涨量占优",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "300127",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -70296,33 +68777,6 @@
       "reasons": []
     },
     {
-      "symbol": "300147",
-      "score": 0.0,
-      "regime": "下跌反弹",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 33.522,
-      "stop_price": 31.736,
-      "position_risk_pct": 5.33,
-      "reasons": [
-        "上涨量占优",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "300152",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 9.849,
-      "stop_price": 9.229,
-      "position_risk_pct": 6.29,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "300154",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -70343,34 +68797,6 @@
       "stop_price": 34.593,
       "position_risk_pct": 6.93,
       "reasons": []
-    },
-    {
-      "symbol": "300167",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 26.569,
-      "stop_price": 22.343,
-      "position_risk_pct": 15.91,
-      "reasons": [
-        "上涨量占优",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "300173",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 16.194,
-      "stop_price": 15.236,
-      "position_risk_pct": 5.92,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "300174",
@@ -70417,20 +68843,6 @@
       "reasons": []
     },
     {
-      "symbol": "300198",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 20.696,
-      "stop_price": 19.065,
-      "position_risk_pct": 7.88,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "300204",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -70442,50 +68854,6 @@
       "reasons": [
         "上涨量占优",
         "风险：跌破20日平台"
-      ]
-    },
-    {
-      "symbol": "300205",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 27.705,
-      "stop_price": 25.706,
-      "position_risk_pct": 7.22,
-      "reasons": [
-        "站上MA20",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "300211",
-      "score": 0.0,
-      "regime": "下跌反弹",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 42.323,
-      "stop_price": 37.718,
-      "position_risk_pct": 10.88,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "300212",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 69.262,
-      "stop_price": 58.779,
-      "position_risk_pct": 15.14,
-      "reasons": [
-        "站上MA20",
-        "MA60向上",
-        "风险：ST股票"
       ]
     },
     {
@@ -70511,22 +68879,6 @@
       "reasons": []
     },
     {
-      "symbol": "300237",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 31.794,
-      "stop_price": 30.768,
-      "position_risk_pct": 3.23,
-      "reasons": [
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "300238",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -70536,23 +68888,6 @@
       "stop_price": 41.511,
       "position_risk_pct": 2.95,
       "reasons": []
-    },
-    {
-      "symbol": "300245",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 21.902,
-      "stop_price": 19.516,
-      "position_risk_pct": 10.9,
-      "reasons": [
-        "站上MA20",
-        "上涨量占优",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "300249",
@@ -70659,40 +68994,6 @@
       "reasons": []
     },
     {
-      "symbol": "300290",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 31.616,
-      "stop_price": 26.178,
-      "position_risk_pct": 17.2,
-      "reasons": [
-        "站上MA20",
-        "高低点抬升",
-        "突破放量",
-        "上涨量占优",
-        "20日跑赢市场",
-        "风险：偏离MA20超过15%",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "300301",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 18.609,
-      "stop_price": 17.216,
-      "position_risk_pct": 7.49,
-      "reasons": [
-        "MA20高于MA60",
-        "上涨量占优",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "300305",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -70702,35 +69003,6 @@
       "stop_price": 17.893,
       "position_risk_pct": 10.12,
       "reasons": []
-    },
-    {
-      "symbol": "300307",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 14.585,
-      "stop_price": 13.199,
-      "position_risk_pct": 9.5,
-      "reasons": []
-    },
-    {
-      "symbol": "300311",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 38.573,
-      "stop_price": 35.8,
-      "position_risk_pct": 7.19,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "OBV创新高",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "300320",
@@ -70772,20 +69044,6 @@
       ]
     },
     {
-      "symbol": "300326",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 65.444,
-      "stop_price": 60.788,
-      "position_risk_pct": 7.11,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "300327",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -70819,21 +69077,6 @@
       "reasons": []
     },
     {
-      "symbol": "300338",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 11.869,
-      "stop_price": 10.088,
-      "position_risk_pct": 15.01,
-      "reasons": [
-        "上涨量占优",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "300345",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -70844,19 +69087,6 @@
       "position_risk_pct": 0.4,
       "reasons": [
         "风险：跌破20日平台"
-      ]
-    },
-    {
-      "symbol": "300352",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 43.01,
-      "stop_price": 39.153,
-      "position_risk_pct": 8.97,
-      "reasons": [
-        "风险：ST股票"
       ]
     },
     {
@@ -70885,20 +69115,6 @@
       "reasons": []
     },
     {
-      "symbol": "300366",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 25.87,
-      "stop_price": 24.655,
-      "position_risk_pct": 4.7,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "300382",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -70908,19 +69124,6 @@
       "stop_price": 136.012,
       "position_risk_pct": 4.72,
       "reasons": []
-    },
-    {
-      "symbol": "300385",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 39.698,
-      "stop_price": 37.573,
-      "position_risk_pct": 5.35,
-      "reasons": [
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "300394",
@@ -70934,22 +69137,6 @@
       "reasons": [
         "上涨量占优",
         "风险：跌破20日平台"
-      ]
-    },
-    {
-      "symbol": "300396",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 34.158,
-      "stop_price": 31.514,
-      "position_risk_pct": 7.74,
-      "reasons": [
-        "站上MA20",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
       ]
     },
     {
@@ -70973,20 +69160,6 @@
       "stop_price": 89.81,
       "position_risk_pct": 9.5,
       "reasons": []
-    },
-    {
-      "symbol": "300430",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 16.863,
-      "stop_price": 15.059,
-      "position_risk_pct": 10.7,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "300440",
@@ -71050,20 +69223,6 @@
       "reasons": []
     },
     {
-      "symbol": "300460",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 11.343,
-      "stop_price": 10.873,
-      "position_risk_pct": 4.14,
-      "reasons": [
-        "上涨量占优",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "300464",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -71073,22 +69232,6 @@
       "stop_price": 12.536,
       "position_risk_pct": 15.92,
       "reasons": []
-    },
-    {
-      "symbol": "300472",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 15.904,
-      "stop_price": 13.701,
-      "position_risk_pct": 13.85,
-      "reasons": [
-        "站上MA20",
-        "上涨量占优",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "300476",
@@ -71192,24 +69335,6 @@
       ]
     },
     {
-      "symbol": "300527",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 14.775,
-      "stop_price": 13.946,
-      "position_risk_pct": 5.61,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "MACD零轴上多头",
-        "RSI强势未过热",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "300539",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -71283,21 +69408,6 @@
       ]
     },
     {
-      "symbol": "300555",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 30.249,
-      "stop_price": 29.467,
-      "position_risk_pct": 2.59,
-      "reasons": [
-        "上涨量占优",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "300556",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -71368,19 +69478,6 @@
       "stop_price": 54.674,
       "position_risk_pct": 7.97,
       "reasons": []
-    },
-    {
-      "symbol": "300594",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 13.041,
-      "stop_price": 11.935,
-      "position_risk_pct": 8.48,
-      "reasons": [
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "300596",
@@ -71646,22 +69743,6 @@
       ]
     },
     {
-      "symbol": "300716",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 26.355,
-      "stop_price": 22.979,
-      "position_risk_pct": 12.81,
-      "reasons": [
-        "MA20高于MA60",
-        "MA60向上",
-        "上涨量占优",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "300723",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -71906,20 +69987,6 @@
       "stop_price": 25.243,
       "position_risk_pct": 12.0,
       "reasons": []
-    },
-    {
-      "symbol": "300831",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 14.525,
-      "stop_price": 12.369,
-      "position_risk_pct": 14.84,
-      "reasons": [
-        "上涨量占优",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "300837",
@@ -72356,20 +70423,6 @@
       "reasons": []
     },
     {
-      "symbol": "301030",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 11.161,
-      "stop_price": 9.05,
-      "position_risk_pct": 18.92,
-      "reasons": [
-        "上涨量占优",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "301031",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -72588,22 +70641,6 @@
       "stop_price": 24.389,
       "position_risk_pct": 6.86,
       "reasons": []
-    },
-    {
-      "symbol": "301139",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 3.254,
-      "stop_price": 2.358,
-      "position_risk_pct": 27.54,
-      "reasons": [
-        "站上MA20",
-        "突破放量",
-        "上涨量占优",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "301149",
@@ -73719,19 +71756,6 @@
       "reasons": []
     },
     {
-      "symbol": "600053",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 16.128,
-      "stop_price": 14.689,
-      "position_risk_pct": 8.92,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "600076",
       "score": 0.0,
       "regime": "下跌反弹",
@@ -73741,66 +71765,6 @@
       "stop_price": 6.278,
       "position_risk_pct": 13.39,
       "reasons": []
-    },
-    {
-      "symbol": "600080",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 18.918,
-      "stop_price": 17.408,
-      "position_risk_pct": 7.98,
-      "reasons": [
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "600082",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 12.812,
-      "stop_price": 11.823,
-      "position_risk_pct": 7.72,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "600084",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 21.924,
-      "stop_price": 19.945,
-      "position_risk_pct": 9.03,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "600107",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 9.505,
-      "stop_price": 9.338,
-      "position_risk_pct": 1.76,
-      "reasons": [
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "600110",
@@ -73839,20 +71803,6 @@
       "reasons": []
     },
     {
-      "symbol": "600119",
-      "score": 0.0,
-      "regime": "下跌反弹",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 9.521,
-      "stop_price": 8.497,
-      "position_risk_pct": 10.76,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "600130",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -73862,22 +71812,6 @@
       "stop_price": 14.087,
       "position_risk_pct": 12.16,
       "reasons": []
-    },
-    {
-      "symbol": "600136",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 3.161,
-      "stop_price": 3.024,
-      "position_risk_pct": 4.32,
-      "reasons": [
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "600141",
@@ -73891,36 +71825,6 @@
       "reasons": []
     },
     {
-      "symbol": "600165",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 14.788,
-      "stop_price": 13.823,
-      "position_risk_pct": 6.52,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "600169",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 15.484,
-      "stop_price": 14.95,
-      "position_risk_pct": 3.45,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "600171",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -73930,23 +71834,6 @@
       "stop_price": 49.145,
       "position_risk_pct": 3.01,
       "reasons": []
-    },
-    {
-      "symbol": "600180",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 3.528,
-      "stop_price": 2.965,
-      "position_risk_pct": 15.97,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "600183",
@@ -73960,23 +71847,6 @@
       "reasons": [
         "MA60向上",
         "风险：跌破20日平台"
-      ]
-    },
-    {
-      "symbol": "600187",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 6.206,
-      "stop_price": 5.76,
-      "position_risk_pct": 7.19,
-      "reasons": [
-        "MA20高于MA60",
-        "MA20向上",
-        "上涨量占优",
-        "20日跑赢市场",
-        "风险：ST股票"
       ]
     },
     {
@@ -74016,65 +71886,6 @@
       "reasons": []
     },
     {
-      "symbol": "600238",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 12.212,
-      "stop_price": 11.445,
-      "position_risk_pct": 6.28,
-      "reasons": [
-        "上涨量占优",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "600239",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 21.821,
-      "stop_price": 20.851,
-      "position_risk_pct": 4.44,
-      "reasons": [
-        "MA20向上",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "600243",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 3.9,
-      "stop_price": 3.403,
-      "position_risk_pct": 12.74,
-      "reasons": [
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "600265",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 26.669,
-      "stop_price": 24.435,
-      "position_risk_pct": 8.38,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "600288",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -74084,35 +71895,6 @@
       "stop_price": 32.385,
       "position_risk_pct": 0.11,
       "reasons": []
-    },
-    {
-      "symbol": "600289",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 27.759,
-      "stop_price": 23.83,
-      "position_risk_pct": 14.15,
-      "reasons": [
-        "突破放量",
-        "上涨量占优",
-        "风险：高量长上影",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "600302",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 13.251,
-      "stop_price": 11.125,
-      "position_risk_pct": 16.04,
-      "reasons": [
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "600316",
@@ -74146,36 +71928,6 @@
       "stop_price": 5.404,
       "position_risk_pct": 7.48,
       "reasons": []
-    },
-    {
-      "symbol": "600337",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 27.293,
-      "stop_price": 26.619,
-      "position_risk_pct": 2.47,
-      "reasons": [
-        "MA20高于MA60",
-        "突破放量",
-        "风险：跌破20日平台",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "600340",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 19.536,
-      "stop_price": 19.16,
-      "position_risk_pct": 1.92,
-      "reasons": [
-        "上涨量占优",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "600345",
@@ -74214,22 +71966,6 @@
       "reasons": []
     },
     {
-      "symbol": "600370",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 9.774,
-      "stop_price": 9.341,
-      "position_risk_pct": 4.43,
-      "reasons": [
-        "MA20高于MA60",
-        "MA20向上",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "600379",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -74239,21 +71975,6 @@
       "stop_price": 21.017,
       "position_risk_pct": 12.78,
       "reasons": []
-    },
-    {
-      "symbol": "600381",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 3.045,
-      "stop_price": 2.912,
-      "position_risk_pct": 4.38,
-      "reasons": [
-        "MA60向上",
-        "上涨量占优",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "600397",
@@ -74281,21 +72002,6 @@
       "reasons": []
     },
     {
-      "symbol": "600476",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 13.267,
-      "stop_price": 11.824,
-      "position_risk_pct": 10.88,
-      "reasons": [
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "600487",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -74307,23 +72013,6 @@
       "reasons": [
         "上涨量占优",
         "风险：跌破20日平台"
-      ]
-    },
-    {
-      "symbol": "600491",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 10.846,
-      "stop_price": 10.059,
-      "position_risk_pct": 7.26,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
       ]
     },
     {
@@ -74369,63 +72058,6 @@
       ]
     },
     {
-      "symbol": "600525",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 45.187,
-      "stop_price": 41.577,
-      "position_risk_pct": 7.99,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "600537",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 7.367,
-      "stop_price": 6.716,
-      "position_risk_pct": 8.84,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "600543",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 6.764,
-      "stop_price": 6.155,
-      "position_risk_pct": 9.0,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "600568",
-      "score": 0.0,
-      "regime": "下跌反弹",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 24.89,
-      "stop_price": 23.051,
-      "position_risk_pct": 7.39,
-      "reasons": [
-        "上涨量占优",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "600576",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -74435,23 +72067,6 @@
       "stop_price": 13.449,
       "position_risk_pct": 2.39,
       "reasons": []
-    },
-    {
-      "symbol": "600581",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 11.629,
-      "stop_price": 10.816,
-      "position_risk_pct": 6.99,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "600601",
@@ -74465,22 +72080,6 @@
       "reasons": [
         "上涨量占优",
         "风险：跌破20日平台"
-      ]
-    },
-    {
-      "symbol": "600624",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 53.975,
-      "stop_price": 50.131,
-      "position_risk_pct": 7.12,
-      "reasons": [
-        "MA20向上",
-        "上涨量占优",
-        "20日跑赢市场",
-        "风险：ST股票"
       ]
     },
     {
@@ -74509,19 +72108,6 @@
       ]
     },
     {
-      "symbol": "600678",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 16.825,
-      "stop_price": 15.331,
-      "position_risk_pct": 8.88,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "600707",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -74533,96 +72119,6 @@
       "reasons": [
         "上涨量占优",
         "风险：跌破20日平台"
-      ]
-    },
-    {
-      "symbol": "600730",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 40.872,
-      "stop_price": 34.656,
-      "position_risk_pct": 15.21,
-      "reasons": [
-        "站上MA20",
-        "MA60向上",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "600734",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 10.824,
-      "stop_price": 9.9,
-      "position_risk_pct": 8.54,
-      "reasons": [
-        "MA20向上",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "600735",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 34.298,
-      "stop_price": 31.629,
-      "position_risk_pct": 7.78,
-      "reasons": [
-        "上涨量占优",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "600745",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 33.408,
-      "stop_price": 33.032,
-      "position_risk_pct": 1.13,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "600753",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 24.948,
-      "stop_price": 24.328,
-      "position_risk_pct": 2.48,
-      "reasons": [
-        "突破放量",
-        "风险：跌破20日平台",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "600759",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 8.894,
-      "stop_price": 8.373,
-      "position_risk_pct": 5.85,
-      "reasons": [
-        "MA20向上",
-        "上涨量占优",
-        "20日跑赢市场",
-        "风险：ST股票"
       ]
     },
     {
@@ -74646,23 +72142,6 @@
       "stop_price": 51.584,
       "position_risk_pct": 9.47,
       "reasons": []
-    },
-    {
-      "symbol": "600818",
-      "score": 0.0,
-      "regime": "底部吸筹候选",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 8.66,
-      "stop_price": 8.158,
-      "position_risk_pct": 5.79,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "600826",
@@ -74723,20 +72202,6 @@
       "reasons": []
     },
     {
-      "symbol": "600889",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 45.564,
-      "stop_price": 44.928,
-      "position_risk_pct": 1.4,
-      "reasons": [
-        "风险：跌破20日平台",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "600892",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -74757,35 +72222,6 @@
       "stop_price": 11.651,
       "position_risk_pct": 8.63,
       "reasons": []
-    },
-    {
-      "symbol": "600965",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 4.419,
-      "stop_price": 4.059,
-      "position_risk_pct": 8.14,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "601010",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 7.984,
-      "stop_price": 6.925,
-      "position_risk_pct": 13.26,
-      "reasons": [
-        "MA20向上",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "601126",
@@ -74889,23 +72325,6 @@
       "reasons": []
     },
     {
-      "symbol": "601718",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 2.014,
-      "stop_price": 1.888,
-      "position_risk_pct": 6.23,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "601869",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -74967,20 +72386,6 @@
       "reasons": []
     },
     {
-      "symbol": "603008",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 13.305,
-      "stop_price": 12.839,
-      "position_risk_pct": 3.51,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "603009",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -75025,22 +72430,6 @@
       "stop_price": 40.859,
       "position_risk_pct": 9.85,
       "reasons": []
-    },
-    {
-      "symbol": "603021",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 17.698,
-      "stop_price": 15.576,
-      "position_risk_pct": 11.99,
-      "reasons": [
-        "MA20高于MA60",
-        "MA20向上",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "603031",
@@ -75324,19 +72713,6 @@
       "reasons": []
     },
     {
-      "symbol": "603189",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 8.844,
-      "stop_price": 8.168,
-      "position_risk_pct": 7.64,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "603196",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -75441,19 +72817,6 @@
       "stop_price": 22.951,
       "position_risk_pct": 2.71,
       "reasons": []
-    },
-    {
-      "symbol": "603272",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 14.348,
-      "stop_price": 13.15,
-      "position_risk_pct": 8.35,
-      "reasons": [
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "603275",
@@ -75616,20 +72979,6 @@
       "reasons": []
     },
     {
-      "symbol": "603359",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 4.394,
-      "stop_price": 3.896,
-      "position_risk_pct": 11.33,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "603370",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -75639,37 +72988,6 @@
       "stop_price": 31.228,
       "position_risk_pct": 2.08,
       "reasons": []
-    },
-    {
-      "symbol": "603377",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 4.964,
-      "stop_price": 4.487,
-      "position_risk_pct": 9.6,
-      "reasons": [
-        "MA20向上",
-        "上涨量占优",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "603378",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 11.011,
-      "stop_price": 9.329,
-      "position_risk_pct": 15.27,
-      "reasons": [
-        "上涨量占优",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "603380",
@@ -75695,20 +73013,6 @@
       "stop_price": 46.013,
       "position_risk_pct": 6.27,
       "reasons": []
-    },
-    {
-      "symbol": "603398",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 25.714,
-      "stop_price": 24.02,
-      "position_risk_pct": 6.59,
-      "reasons": [
-        "上涨量占优",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "603409",
@@ -75742,19 +73046,6 @@
       "stop_price": 7.258,
       "position_risk_pct": 9.72,
       "reasons": []
-    },
-    {
-      "symbol": "603429",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 54.919,
-      "stop_price": 53.854,
-      "position_risk_pct": 1.94,
-      "reasons": [
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "603439",
@@ -75793,22 +73084,6 @@
       ]
     },
     {
-      "symbol": "603517",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 16.67,
-      "stop_price": 15.806,
-      "position_risk_pct": 5.19,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "603520",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -75829,35 +73104,6 @@
       "stop_price": 18.133,
       "position_risk_pct": 10.27,
       "reasons": []
-    },
-    {
-      "symbol": "603557",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 3.905,
-      "stop_price": 3.619,
-      "position_risk_pct": 7.31,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "603595",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 39.276,
-      "stop_price": 37.913,
-      "position_risk_pct": 3.47,
-      "reasons": [
-        "MA20高于MA60",
-        "MA60向上",
-        "上涨量占优",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "603598",
@@ -76047,32 +73293,6 @@
       "reasons": []
     },
     {
-      "symbol": "603718",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 6.528,
-      "stop_price": 6.101,
-      "position_risk_pct": 6.55,
-      "reasons": [
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "603721",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 21.246,
-      "stop_price": 18.919,
-      "position_risk_pct": 10.95,
-      "reasons": []
-    },
-    {
       "symbol": "603722",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -76094,20 +73314,6 @@
       "position_risk_pct": 1.08,
       "reasons": [
         "风险：跌破20日平台"
-      ]
-    },
-    {
-      "symbol": "603729",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 14.33,
-      "stop_price": 12.977,
-      "position_risk_pct": 9.44,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
       ]
     },
     {
@@ -76136,23 +73342,6 @@
       "reasons": []
     },
     {
-      "symbol": "603789",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 7.508,
-      "stop_price": 7.032,
-      "position_risk_pct": 6.34,
-      "reasons": [
-        "MA20高于MA60",
-        "MA20向上",
-        "MA60向上",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "603790",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -76164,81 +73353,6 @@
       "reasons": []
     },
     {
-      "symbol": "603822",
-      "score": 0.0,
-      "regime": "下跌反弹",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 58.598,
-      "stop_price": 53.39,
-      "position_risk_pct": 8.89,
-      "reasons": [
-        "上涨量占优",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "603825",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 10.327,
-      "stop_price": 9.384,
-      "position_risk_pct": 9.14,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "上涨量占优",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "603828",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 18.856,
-      "stop_price": 18.39,
-      "position_risk_pct": 2.47,
-      "reasons": [
-        "上涨量占优",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "603838",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 14.867,
-      "stop_price": 13.512,
-      "position_risk_pct": 9.11,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
-      "symbol": "603843",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 10.047,
-      "stop_price": 8.588,
-      "position_risk_pct": 14.52,
-      "reasons": [
-        "站上MA20",
-        "缩量回踩",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "603856",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -76248,21 +73362,6 @@
       "stop_price": 16.525,
       "position_risk_pct": 2.79,
       "reasons": []
-    },
-    {
-      "symbol": "603869",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 12.111,
-      "stop_price": 11.167,
-      "position_risk_pct": 7.8,
-      "reasons": [
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "603880",
@@ -76329,19 +73428,6 @@
       "stop_price": 18.471,
       "position_risk_pct": 5.14,
       "reasons": []
-    },
-    {
-      "symbol": "603922",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 14.315,
-      "stop_price": 13.34,
-      "position_risk_pct": 6.81,
-      "reasons": [
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "603929",
@@ -76415,20 +73501,6 @@
       "reasons": [
         "上涨量占优",
         "风险：跌破20日平台"
-      ]
-    },
-    {
-      "symbol": "603959",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 8.034,
-      "stop_price": 7.776,
-      "position_risk_pct": 3.21,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
       ]
     },
     {
@@ -76584,22 +73656,6 @@
       ]
     },
     {
-      "symbol": "605199",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 5.822,
-      "stop_price": 5.404,
-      "position_risk_pct": 7.17,
-      "reasons": [
-        "MA20向上",
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "605208",
       "score": 0.0,
       "regime": "震荡整理",
@@ -76704,19 +73760,6 @@
       "stop_price": 16.111,
       "position_risk_pct": 8.79,
       "reasons": []
-    },
-    {
-      "symbol": "605336",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 15.116,
-      "stop_price": 13.337,
-      "position_risk_pct": 11.77,
-      "reasons": [
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "605358",
@@ -76847,21 +73890,6 @@
       ]
     },
     {
-      "symbol": "688022",
-      "score": 0.0,
-      "regime": "下跌反弹",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 10.758,
-      "stop_price": 9.733,
-      "position_risk_pct": 9.53,
-      "reasons": [
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "688025",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -76890,21 +73918,6 @@
       ]
     },
     {
-      "symbol": "688033",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 6.245,
-      "stop_price": 6.032,
-      "position_risk_pct": 3.42,
-      "reasons": [
-        "MA20向上",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "688048",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -76915,19 +73928,6 @@
       "position_risk_pct": 3.29,
       "reasons": [
         "风险：跌破20日平台"
-      ]
-    },
-    {
-      "symbol": "688053",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 30.399,
-      "stop_price": 27.359,
-      "position_risk_pct": 10.0,
-      "reasons": [
-        "风险：ST股票"
       ]
     },
     {
@@ -76942,19 +73942,6 @@
       "reasons": [
         "MA60向上",
         "风险：跌破20日平台"
-      ]
-    },
-    {
-      "symbol": "688066",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 10.629,
-      "stop_price": 9.602,
-      "position_risk_pct": 9.67,
-      "reasons": [
-        "风险：ST股票"
       ]
     },
     {
@@ -76980,20 +73967,6 @@
       "reasons": [
         "MA20高于MA60",
         "风险：跌破20日平台"
-      ]
-    },
-    {
-      "symbol": "688076",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 38.707,
-      "stop_price": 38.355,
-      "position_risk_pct": 0.91,
-      "reasons": [
-        "20日跑赢市场",
-        "风险：ST股票"
       ]
     },
     {
@@ -77028,22 +74001,6 @@
       "stop_price": 117.189,
       "position_risk_pct": 7.28,
       "reasons": []
-    },
-    {
-      "symbol": "688089",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 10.377,
-      "stop_price": 10.273,
-      "position_risk_pct": 1.0,
-      "reasons": [
-        "突破放量",
-        "风险：高量长上影",
-        "风险：跌破20日平台",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "688090",
@@ -77201,19 +74158,6 @@
       "stop_price": 3.522,
       "position_risk_pct": 9.73,
       "reasons": []
-    },
-    {
-      "symbol": "688121",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 2.492,
-      "stop_price": 2.119,
-      "position_risk_pct": 14.97,
-      "reasons": [
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "688135",
@@ -77395,19 +74339,6 @@
       ]
     },
     {
-      "symbol": "688184",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 12.622,
-      "stop_price": 11.749,
-      "position_risk_pct": 6.92,
-      "reasons": [
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "688187",
       "score": 0.0,
       "regime": "下跌反弹",
@@ -77417,21 +74348,6 @@
       "stop_price": 47.437,
       "position_risk_pct": 6.33,
       "reasons": []
-    },
-    {
-      "symbol": "688189",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 12.348,
-      "stop_price": 12.17,
-      "position_risk_pct": 1.44,
-      "reasons": [
-        "MA20向上",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "688191",
@@ -77454,21 +74370,6 @@
       "stop_price": 41.516,
       "position_risk_pct": 7.56,
       "reasons": []
-    },
-    {
-      "symbol": "688201",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 22.674,
-      "stop_price": 20.974,
-      "position_risk_pct": 7.5,
-      "reasons": [
-        "缩量回踩",
-        "20日跑赢市场",
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "688205",
@@ -77705,19 +74606,6 @@
       "stop_price": 31.832,
       "position_risk_pct": 0.82,
       "reasons": []
-    },
-    {
-      "symbol": "688270",
-      "score": 0.0,
-      "regime": "阴跌趋势",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 157.601,
-      "stop_price": 154.075,
-      "position_risk_pct": 2.24,
-      "reasons": [
-        "风险：ST股票"
-      ]
     },
     {
       "symbol": "688272",
@@ -78306,24 +75194,6 @@
       "reasons": []
     },
     {
-      "symbol": "688496",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "放量跌破MA60/清仓候选",
-      "close": 0.903,
-      "stop_price": 0.722,
-      "position_risk_pct": 20.03,
-      "reasons": [
-        "站上MA20",
-        "MA20向上",
-        "突破放量",
-        "20日跑赢市场",
-        "风险：高量长上影",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "688502",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -78590,23 +75460,6 @@
       ]
     },
     {
-      "symbol": "688622",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "趋势持有/观察",
-      "close": 106.074,
-      "stop_price": 86.495,
-      "position_risk_pct": 18.46,
-      "reasons": [
-        "站上MA20",
-        "MA60向上",
-        "上涨量占优",
-        "缩量回踩",
-        "风险：ST股票"
-      ]
-    },
-    {
       "symbol": "688636",
       "score": 0.0,
       "regime": "阴跌趋势",
@@ -78618,21 +75471,6 @@
       "reasons": [
         "上涨量占优",
         "风险：跌破20日平台"
-      ]
-    },
-    {
-      "symbol": "688646",
-      "score": 0.0,
-      "regime": "震荡整理",
-      "entry_signal": "等待确认",
-      "exit_signal": "连续跌破MA20/减仓候选",
-      "close": 56.704,
-      "stop_price": 53.763,
-      "position_risk_pct": 5.19,
-      "reasons": [
-        "MA60向上",
-        "上涨量占优",
-        "风险：ST股票"
       ]
     },
     {

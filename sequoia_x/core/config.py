@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     baostock_daily_request_limit: int = 48000
     strategy_max_workers: int = 4
     thresholds_config_path: str = "config/thresholds.ini"
+    log_dir: str = "logs"
+    log_retention_files: int = 10
     feishu_webhook_url: str  # 必填字段，缺失时抛出 ValidationError
     strategy_webhooks: dict[str, str] = {}
 

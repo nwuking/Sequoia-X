@@ -658,21 +658,39 @@ class FeishuNotifier:
     ) -> None:
         """推送自动多周期预测、到期准确性和剩余周期刷新结果。"""
         blocks: list[str] = []
+        stock_sections: dict[tuple[str, str], list[str]] = {}
+        seen_evaluations: set[tuple[str, int]] = set()
+        seen_predictions: set[tuple[str, int, int, bool]] = set()
+
         for item in report.evaluations:
-            blocks.append(
-                f"### ✅ {item.name} {item.symbol}｜第{item.horizon}个交易日验证\n"
+            key = (item.symbol, item.horizon)
+            if key in seen_evaluations:
+                continue
+            seen_evaluations.add(key)
+            stock_sections.setdefault((item.symbol, item.name), []).append(
+                f"✅ 第{item.horizon}个交易日验证｜"
                 f"预测方向：**{item.predicted_direction}**｜实际收益：{item.actual_return:+.2%}｜"
                 f"结果：**{'准确' if item.accurate else '不准确'}**"
             )
         for item in report.predictions:
+            key = (
+                item.symbol,
+                item.target_horizon,
+                item.remaining_horizon,
+                item.refreshed,
+            )
+            if key in seen_predictions:
+                continue
+            seen_predictions.add(key)
             label = "刷新预测" if item.refreshed else "初始预测"
-            blocks.append(
-                f"### 🔮 {item.name} {item.symbol}｜{label}\n"
-                f"目标：周期第{item.target_horizon}个交易日｜"
+            stock_sections.setdefault((item.symbol, item.name), []).append(
+                f"🔮 {label}｜周期第{item.target_horizon}个交易日｜"
                 f"距当前剩余：{item.remaining_horizon}个交易日｜"
                 f"方向：**{item.direction}**｜上涨概率：{item.probability:.1%}｜"
                 f"历史同概率组收益：{item.expected_return:+.2%}"
             )
+        for (symbol, name), lines in stock_sections.items():
+            blocks.append(f"### {name} {symbol}\n" + "\n".join(lines))
         for error in report.errors:
             blocks.append(f"### ⚠️ 预测处理异常\n{error}")
         if not blocks and not report.completed:

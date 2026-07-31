@@ -5,6 +5,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from sequoia_x.core.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 def update_consecutive_counts(
     path_value: str,
@@ -22,7 +26,9 @@ def update_consecutive_counts(
     previous_symbols = set(previous.get("symbols", []))
     previous_counts = previous.get("counts", {})
     if previous.get("data_date") == data_date:
-        return {symbol: int(previous_counts.get(symbol, 1)) for symbol in symbols}
+        counts = {symbol: int(previous_counts.get(symbol, 1)) for symbol in symbols}
+        logger.info(f"组合候选连续次数状态同日复用：{data_date}，候选 {len(counts)} 只")
+        return counts
     counts = {
         symbol: int(previous_counts.get(symbol, 0)) + 1 if symbol in previous_symbols else 1
         for symbol in symbols
@@ -38,4 +44,5 @@ def update_consecutive_counts(
         encoding="utf-8",
     )
     temporary.replace(path)
+    logger.info(f"组合候选连续次数状态已更新：{data_date}，候选 {len(counts)} 只，文件 {path}")
     return counts
