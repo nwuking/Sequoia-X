@@ -1,0 +1,63 @@
+sequoia_x/notify/feishu.py
+  s_b00aaa2f884826::t_4449e56dfed125 481,588,634,647,663,692,744,760,775
+tests/test_feishu.py
+  s_b00aaa2f884826::t_4449e56dfed125 90,120
+sequoia_x/strategy/rps_breakout.py
+  s_b00aaa2f884826::t_4449e56dfed125 12
+sequoia_x/strategy/limit_up_shakeout.py
+  s_b00aaa2f884826::t_4449e56dfed125 24
+  s_b00aaa2f884826::t_056956fe00803d 21
+sequoia_x/strategy/uptrend_limit_down.py
+  s_b00aaa2f884826::t_4449e56dfed125 23
+  s_b00aaa2f884826::t_056956fe00803d 20
+sequoia_x/core/config.py
+  s_b00aaa2f884826::t_056956fe00803d 75
+  s_b00aaa2f884826::t_3abec76125319b 40,61
+sequoia_x/strategy/low_price_multi_factor.py
+  s_b00aaa2f884826::t_4449e56dfed125 29
+README.md
+  s_b00aaa2f884826::t_3abec76125319b 30,32,46-47,70,87
+sequoia_x/strategy/base.py
+  s_b00aaa2f884826::t_056956fe00803d 22
+  s_b00aaa2f884826::t_4449e56dfed125 25
+sequoia_x/strategy/turtle_trade.py
+  s_b00aaa2f884826::t_4449e56dfed125 24
+  s_b00aaa2f884826::t_056956fe00803d 21
+sequoia_x/strategy/comprehensive_trend.py
+  s_b00aaa2f884826::t_4449e56dfed125 41
+.env.example
+  s_b00aaa2f884826::t_8a5d8f33fe0bdc 23-33
+sequoia_x/strategy/high_tight_flag.py
+  s_b00aaa2f884826::t_4449e56dfed125 23
+  s_b00aaa2f884826::t_056956fe00803d 20
+sequoia_x/strategy/private_placement.py
+  s_b00aaa2f884826::t_4449e56dfed125 23
+  s_b00aaa2f884826::t_056956fe00803d 20
+sequoia_x/strategy/ma_volume.py
+  s_b00aaa2f884826::t_4449e56dfed125 22
+  s_b00aaa2f884826::t_056956fe00803d 19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "0fcf9571662d234253fe2ffeaf3a1255e5fd4a0b",
+  "prompts": {},
+  "logical_commit_id": "0fcf9571662d234253fe2ffeaf3a1255e5fd4a0b",
+  "humans": {
+    "h_dc6c9c0bce9380": {
+      "author": "yeyongjun <yeyongjun@bigo.sg>"
+    }
+  },
+  "sessions": {
+    "s_b00aaa2f884826": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fb6ed-ed3d-7921-aee5-7750eec8e8c2",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "yeyongjun <yeyongjun@bigo.sg>",
+      "total_additions": 48,
+      "total_deletions": 53
+    }
+  }
+}
