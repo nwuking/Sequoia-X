@@ -1,0 +1,29 @@
+main.py
+  s_b00aaa2f884826::t_6d8583296ce5e4 440-449
+tests/test_feishu.py
+  s_b00aaa2f884826::t_6d8583296ce5e4 66-89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "4185f4c4a5c9f8197e51b0ff97de49fd0ea1b751",
+  "prompts": {},
+  "logical_commit_id": "4185f4c4a5c9f8197e51b0ff97de49fd0ea1b751",
+  "humans": {
+    "h_dc6c9c0bce9380": {
+      "author": "yeyongjun <yeyongjun@bigo.sg>"
+    }
+  },
+  "sessions": {
+    "s_b00aaa2f884826": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fb6ed-ed3d-7921-aee5-7750eec8e8c2",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "yeyongjun <yeyongjun@bigo.sg>",
+      "total_additions": 34,
+      "total_deletions": 12
+    }
+  }
+}
