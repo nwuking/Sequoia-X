@@ -27,6 +27,8 @@ class LowPriceMultiFactorStrategy(BaseStrategy):
     """
 
     webhook_key: str = "portfolio_management"
+    # 前10名已经包含在自选/持仓组合报告中，不再单独发送策略卡片。
+    standalone_push_enabled: bool = False
     _MIN_BARS: int = 252
     _MAX_HOLDINGS: int = 3
     _MAX_CLOSE: float = 30.0

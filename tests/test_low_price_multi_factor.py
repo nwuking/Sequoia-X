@@ -10,6 +10,11 @@ from sequoia_x.data.engine import DataEngine
 from sequoia_x.strategy.low_price_multi_factor import LowPriceMultiFactorStrategy
 
 
+def test_low_price_strategy_disables_standalone_push() -> None:
+    """低价多因子结果已并入组合报告，不应再发送独立消息。"""
+    assert LowPriceMultiFactorStrategy.standalone_push_enabled is False
+
+
 def _build_ohlcv(close_values: list[float], turnover_values: list[float]) -> pd.DataFrame:
     base = pd.date_range("2024-01-01", periods=len(close_values), freq="B")
     return pd.DataFrame(

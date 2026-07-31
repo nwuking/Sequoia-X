@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     thresholds_config_path: str = "config/thresholds.ini"
     log_dir: str = "logs"
     log_retention_files: int = 10
+    using_local_data_fallback: bool = False
     feishu_webhook_url: str  # 必填字段，缺失时抛出 ValidationError
     strategy_webhooks: dict[str, str] = {}
 

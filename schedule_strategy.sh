@@ -49,17 +49,48 @@ run_task() {
     esac
 }
 
+cleanup_task_logs() {
+    local task="$1"
+    local files=()
+    local path
+    for path in "${LOG_DIR}/${task}-"*.log; do
+        [[ -e "${path}" ]] || continue
+        files+=("${path}")
+    done
+    while (( ${#files[@]} > 10 )); do
+        rm -f -- "${files[0]}"
+        files=("${files[@]:1}")
+    done
+}
+
+run_scheduled_task() {
+    local task="${1:-}"
+    case "${task}" in
+        intraday|daily) ;;
+        *) printf '错误：未知定时任务：%s\n' "${task}" >&2; exit 2 ;;
+    esac
+    check_runtime
+    local log_file="${LOG_DIR}/${task}-$(date +%F).log"
+    touch "${log_file}"
+    cleanup_task_logs "${task}"
+    cd "${SCRIPT_DIR}"
+    case "${task}" in
+        intraday) exec "${PYTHON_BIN}" "${MAIN_FILE}" --intraday >> "${log_file}" 2>&1 ;;
+        daily) exec "${PYTHON_BIN}" "${MAIN_FILE}" >> "${log_file}" 2>&1 ;;
+    esac
+}
+
 managed_cron_block() {
     printf '%s\n' \
         "${CRON_BEGIN}" \
         "CRON_TZ=Asia/Shanghai" \
-        "40 9 * * 1-5 cd \"${SCRIPT_DIR}\" && \"${SCRIPT_DIR}/schedule_strategy.sh\" run intraday >> \"${LOG_DIR}/intraday.log\" 2>&1" \
-        "30 10 * * 1-5 cd \"${SCRIPT_DIR}\" && \"${SCRIPT_DIR}/schedule_strategy.sh\" run intraday >> \"${LOG_DIR}/intraday.log\" 2>&1" \
-        "20 11 * * 1-5 cd \"${SCRIPT_DIR}\" && \"${SCRIPT_DIR}/schedule_strategy.sh\" run intraday >> \"${LOG_DIR}/intraday.log\" 2>&1" \
-        "30 13 * * 1-5 cd \"${SCRIPT_DIR}\" && \"${SCRIPT_DIR}/schedule_strategy.sh\" run intraday >> \"${LOG_DIR}/intraday.log\" 2>&1" \
-        "30 14 * * 1-5 cd \"${SCRIPT_DIR}\" && \"${SCRIPT_DIR}/schedule_strategy.sh\" run intraday >> \"${LOG_DIR}/intraday.log\" 2>&1" \
-        "50 14 * * 1-5 cd \"${SCRIPT_DIR}\" && \"${SCRIPT_DIR}/schedule_strategy.sh\" run intraday >> \"${LOG_DIR}/intraday.log\" 2>&1" \
-        "15 19 * * 1-5 cd \"${SCRIPT_DIR}\" && \"${SCRIPT_DIR}/schedule_strategy.sh\" run daily >> \"${LOG_DIR}/daily.log\" 2>&1" \
+        "40 9 * * 1-5 cd \"${SCRIPT_DIR}\" && \"${SCRIPT_DIR}/schedule_strategy.sh\" scheduled intraday" \
+        "30 10 * * 1-5 cd \"${SCRIPT_DIR}\" && \"${SCRIPT_DIR}/schedule_strategy.sh\" scheduled intraday" \
+        "20 11 * * 1-5 cd \"${SCRIPT_DIR}\" && \"${SCRIPT_DIR}/schedule_strategy.sh\" scheduled intraday" \
+        "30 13 * * 1-5 cd \"${SCRIPT_DIR}\" && \"${SCRIPT_DIR}/schedule_strategy.sh\" scheduled intraday" \
+        "30 14 * * 1-5 cd \"${SCRIPT_DIR}\" && \"${SCRIPT_DIR}/schedule_strategy.sh\" scheduled intraday" \
+        "50 14 * * 1-5 cd \"${SCRIPT_DIR}\" && \"${SCRIPT_DIR}/schedule_strategy.sh\" scheduled intraday" \
+        "15 19 * * 1-5 cd \"${SCRIPT_DIR}\" && \"${SCRIPT_DIR}/schedule_strategy.sh\" scheduled daily" \
         "${CRON_END}"
 }
 
@@ -109,5 +140,6 @@ case "${1:-}" in
     list) list_jobs ;;
     remove) remove_jobs ;;
     run) run_task "${2:-}" ;;
+    scheduled) run_scheduled_task "${2:-}" ;;
     *) usage; exit 2 ;;
 esac

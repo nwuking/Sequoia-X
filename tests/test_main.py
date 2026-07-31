@@ -73,6 +73,7 @@ def test_sync_failure_alerts_and_continues_by_default() -> None:
 
     assert result is False
     logger.warning.assert_called_once()
+    notifier.set_local_data_fallback.assert_called_once_with(True)
     notifier.send_system_alert.assert_called_once_with(
         title="baostock 登录或同步失败",
         message="sync failed",

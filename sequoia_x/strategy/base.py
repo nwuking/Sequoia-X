@@ -23,6 +23,7 @@ class BaseStrategy(ABC):
     """
 
     webhook_key: str = "original_strategies"
+    standalone_push_enabled: bool = True
 
     def __init__(self, engine: DataEngine, settings: Settings) -> None:
         """

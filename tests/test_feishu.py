@@ -230,6 +230,28 @@ def test_system_alert_contains_failure_and_local_data_date() -> None:
     assert "继续使用本地数据" in card_text
 
 
+def test_local_data_fallback_adds_marker_to_feishu_header() -> None:
+    """最新行情同步失败后，后续飞书消息标题应明确标记为历史数据。"""
+    notifier = FeishuNotifier(make_settings())
+    notifier.set_local_data_fallback(True)
+
+    with patch("requests.post") as mock_post:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=MagicMock(return_value={"code": 0}),
+        )
+        notifier.send(
+            symbols=["000001"],
+            strategy_name="MaVolumeStrategy",
+            data_date="2026-07-30",
+        )
+
+    body = json.loads(mock_post.call_args.kwargs["data"])
+    title = body["card"]["header"]["title"]["content"]
+    assert title.startswith("⚠️ 历史数据 | ")
+    assert "小 A 选股播报" in title
+
+
 def test_intraday_empty_status_and_paper_trades_are_pushed() -> None:
     notifier = FeishuNotifier(make_settings())
     trade = SimpleNamespace(

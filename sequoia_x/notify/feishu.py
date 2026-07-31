@@ -30,6 +30,10 @@ class FeishuNotifier:
         """
         self.settings = settings
 
+    def set_local_data_fallback(self, enabled: bool) -> None:
+        """设置本次运行是否因行情同步失败而降级使用本地历史数据。"""
+        self.settings.using_local_data_fallback = enabled
+
     @staticmethod
     def _to_xueqiu_code(code: str) -> str:
         """将纯数字代码转为雪球格式：6开头→SH，4/8开头→BJ，其余→SZ。"""
@@ -417,6 +421,12 @@ class FeishuNotifier:
 
     def _post_payload(self, payload: dict, webhook_key: str, success_message: str) -> None:
         """发送飞书卡片并统一处理响应。"""
+        if self.settings.using_local_data_fallback:
+            title = payload.get("card", {}).get("header", {}).get("title", {})
+            content = title.get("content")
+            marker = "⚠️ 历史数据 | "
+            if isinstance(content, str) and not content.startswith(marker):
+                title["content"] = marker + content
         url = self.settings.get_webhook_url(webhook_key)
         try:
             resp = requests.post(

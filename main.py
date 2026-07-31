@@ -89,12 +89,15 @@ def _sync_latest(engine: DataEngine, force: bool, logger, notifier=None) -> bool
             f"{exc}"
         )
         if notifier is not None:
+            notifier.set_local_data_fallback(True)
             notifier.send_system_alert(
                 title="baostock 登录或同步失败",
                 message=str(exc),
                 data_date=engine.get_latest_date(),
             )
         return False
+    if notifier is not None:
+        notifier.set_local_data_fallback(False)
     logger.info(f"快照同步完成，写入 {count} 只股票")
     return True
 
@@ -437,6 +440,11 @@ def main() -> None:
         for strategy in strategies:
             strategy_name = type(strategy).__name__
             selected = strategy_selections[strategy_name]
+            if not strategy.standalone_push_enabled:
+                logger.info(
+                    f"{strategy_name} 独立推送已关闭，结果继续用于组合报告和组合决策"
+                )
+                continue
             stock_names = engine.get_stock_names(selected) if selected else {}
             notifier.send(
                 symbols=selected,
