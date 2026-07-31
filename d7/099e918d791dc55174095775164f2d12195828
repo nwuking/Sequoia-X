@@ -1,0 +1,29 @@
+sequoia_x/notify/feishu.py
+  s_b00aaa2f884826::t_11e62c7ab1ad31 67,125,184,270,410,488,555,710,773,813
+tests/test_feishu.py
+  s_b00aaa2f884826::t_11e62c7ab1ad31 66-82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "d7099e918d791dc55174095775164f2d12195828",
+  "prompts": {},
+  "logical_commit_id": "d7099e918d791dc55174095775164f2d12195828",
+  "humans": {
+    "h_dc6c9c0bce9380": {
+      "author": "yeyongjun <yeyongjun@bigo.sg>"
+    }
+  },
+  "sessions": {
+    "s_b00aaa2f884826": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fb6ed-ed3d-7921-aee5-7750eec8e8c2",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "yeyongjun <yeyongjun@bigo.sg>",
+      "total_additions": 27,
+      "total_deletions": 10
+    }
+  }
+}
