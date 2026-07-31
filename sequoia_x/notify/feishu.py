@@ -64,7 +64,7 @@ class FeishuNotifier:
                 "header": {
                     "title": {
                         "tag": "plain_text",
-                        "content": f"📈 Sequoia-X 选股播报 | {strategy_name}",
+                        "content": f"📈 小 A 选股播报 | {strategy_name}",
                     },
                     "template": "blue",
                 },
@@ -122,7 +122,7 @@ class FeishuNotifier:
                 "header": {
                     "title": {
                         "tag": "plain_text",
-                        "content": f"🔮 Sequoia-X 股票预测 | 未来 {horizon} 个交易日",
+                        "content": f"🔮 小 A 股票预测 | 未来 {horizon} 个交易日",
                     },
                     "template": "purple",
                 },
@@ -181,7 +181,7 @@ class FeishuNotifier:
             "msg_type": "interactive",
             "card": {
                 "header": {
-                    "title": {"tag": "plain_text", "content": "⚠️ Sequoia-X 盘中实时监控"},
+                    "title": {"tag": "plain_text", "content": "⚠️ 小 A 盘中实时监控"},
                     "template": "red",
                 },
                 "elements": [
@@ -267,7 +267,7 @@ class FeishuNotifier:
             "msg_type": "interactive",
             "card": {
                 "header": {
-                    "title": {"tag": "plain_text", "content": "💼 Sequoia-X 自选与持仓"},
+                    "title": {"tag": "plain_text", "content": "💼 小 A 自选与持仓"},
                     "template": "wathet",
                 },
                 "elements": [
@@ -407,7 +407,7 @@ class FeishuNotifier:
                 "header": {
                     "title": {
                         "tag": "plain_text",
-                        "content": "💼 Sequoia-X 持仓与下一工作日操作观察",
+                        "content": "💼 小 A 持仓与下一工作日操作观察",
                     },
                     "template": "wathet",
                 },
@@ -485,7 +485,7 @@ class FeishuNotifier:
             "msg_type": "interactive",
             "card": {
                 "header": {
-                    "title": {"tag": "plain_text", "content": f"🚨 Sequoia-X | {title}"},
+                    "title": {"tag": "plain_text", "content": f"🚨 小 A | {title}"},
                     "template": "red",
                 },
                 "elements": [
@@ -552,7 +552,7 @@ class FeishuNotifier:
                 "header": {
                     "title": {
                         "tag": "plain_text",
-                        "content": f"🎯 Sequoia-X 组合决策重点候选{suffix}",
+                        "content": f"🎯 小 A 组合决策重点候选{suffix}",
                     },
                     "template": "blue",
                 },
@@ -707,7 +707,7 @@ class FeishuNotifier:
                     "header": {
                         "title": {
                             "tag": "plain_text",
-                            "content": f"📊 Sequoia-X 多周期预测跟踪{suffix}",
+                            "content": f"📊 小 A 多周期预测跟踪{suffix}",
                         },
                         "template": "purple",
                     },
@@ -770,7 +770,7 @@ class FeishuNotifier:
             "msg_type": "interactive",
             "card": {
                 "header": {
-                    "title": {"tag": "plain_text", "content": "✅ Sequoia-X 盘中监控正常"},
+                    "title": {"tag": "plain_text", "content": "✅ 小 A 盘中监控正常"},
                     "template": "green",
                 },
                 "elements": [
@@ -810,7 +810,7 @@ class FeishuNotifier:
             "msg_type": "interactive",
             "card": {
                 "header": {
-                    "title": {"tag": "plain_text", "content": "🧪 Sequoia-X 模拟交易成交"},
+                    "title": {"tag": "plain_text", "content": "🧪 小 A 模拟交易成交"},
                     "template": "orange",
                 },
                 "elements": [

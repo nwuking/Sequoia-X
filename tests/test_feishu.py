@@ -63,6 +63,23 @@ def test_notification_contains_latest_data_date() -> None:
     assert "2026-07-27" in card_text
 
 
+def test_feishu_card_header_uses_xiao_a_brand() -> None:
+    """飞书消息头部统一使用“小 A”品牌名。"""
+    notifier = FeishuNotifier(make_settings())
+
+    with patch("requests.post") as mock_post:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=MagicMock(return_value={"code": 0}),
+        )
+        notifier.send(symbols=["000001"], strategy_name="TestStrategy")
+
+    body = json.loads(mock_post.call_args.kwargs["data"])
+    title = body["card"]["header"]["title"]["content"]
+    assert "小 A" in title
+    assert "Sequoia-X" not in title
+
+
 def test_empty_strategy_result_is_still_pushed() -> None:
     """策略没有选出股票时也应推送运行完成状态。"""
     notifier = FeishuNotifier(make_settings())
