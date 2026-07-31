@@ -17,10 +17,10 @@ class HighTightFlagStrategy(BaseStrategy):
     3. 缩量：今日 volume < 过去20日 volume 均值的 0.6 倍
 
     Attributes:
-        webhook_key: 路由到 'flag' 专属飞书机器人。
+        webhook_key: 路由到原始策略群。
     """
 
-    webhook_key: str = "flag"
+    webhook_key: str = "original_strategies"
     _MIN_BARS: int = 40  # 至少需要 40 根 K 线
 
     def _run(self) -> list[str]:

@@ -17,10 +17,10 @@ class UptrendLimitDownStrategy(BaseStrategy):
                 且今日 volume > 20日均量的 2.0 倍
 
     Attributes:
-        webhook_key: 路由到 'limit_down' 专属飞书机器人。
+        webhook_key: 路由到原始策略群。
     """
 
-    webhook_key: str = "limit_down"
+    webhook_key: str = "original_strategies"
     _MIN_BARS: int = 60  # 至少需要 60 根 K 线（60日均线）
 
     def _run(self) -> list[str]:

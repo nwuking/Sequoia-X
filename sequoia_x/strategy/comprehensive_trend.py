@@ -38,7 +38,7 @@ class ComprehensiveTrendStrategy(BaseStrategy):
     last_assessments，供终端、通知和后续组合管理使用。
     """
 
-    webhook_key = "comprehensive_trend"
+    webhook_key = "core_decision"
     min_history = 130
     max_candidates = 30
 

@@ -18,10 +18,10 @@ class TurtleTradeStrategy(BaseStrategy):
     3. 防诱多过滤：今日必须是实体阳线（今日 close > 今日 open），且必须真涨（今日 close > 昨日 close）
 
     Attributes:
-        webhook_key: 路由到 'turtle' 专属飞书机器人。
+        webhook_key: 路由到原始策略群。
     """
 
-    webhook_key: str = "turtle"
+    webhook_key: str = "original_strategies"
     _MIN_BARS: int = 21  # 至少需要 21 根 K 线（20日窗口 + 当日）
 
     @serialized_baostock

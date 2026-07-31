@@ -478,7 +478,7 @@ class FeishuNotifier:
         title: str,
         message: str,
         data_date: str | None = None,
-        webhook_key: str = "system",
+        webhook_key: str = "system_operations",
     ) -> None:
         """推送数据同步等系统级异常告警。"""
         payload = {
@@ -585,7 +585,7 @@ class FeishuNotifier:
         data_date: str | None,
         stock_names: dict[str, str] | None = None,
         max_chars: int = 12000,
-        webhook_key: str = "default",
+        webhook_key: str = "core_decision",
     ) -> None:
         """按飞书消息长度自动合并或拆分组合候选完整明细。"""
         if not details:
@@ -631,7 +631,7 @@ class FeishuNotifier:
         results: list,
         metrics: dict[str, float],
         stock_names: dict[str, str] | None = None,
-        webhook_key: str = "prediction",
+        webhook_key: str = "core_decision",
     ) -> None:
         """将指定股票的概率预测结果推送至飞书。"""
         if not results:
@@ -644,7 +644,7 @@ class FeishuNotifier:
             f"预测结果飞书推送成功 [{webhook_key}]，共 {len(results)} 只股票",
         )
 
-    def send_intraday_alerts(self, alerts: list, webhook_key: str = "intraday") -> None:
+    def send_intraday_alerts(self, alerts: list, webhook_key: str = "intraday_trading") -> None:
         """推送盘中新预警；同日去重由 IntradayMonitor 负责。"""
         if not alerts:
             logger.info("无盘中新预警，跳过飞书推送")
@@ -660,7 +660,7 @@ class FeishuNotifier:
         monitored_count: int,
         quoted_count: int,
         account_count: int,
-        webhook_key: str = "intraday",
+        webhook_key: str = "intraday_trading",
     ) -> None:
         """盘中无新信号时推送监控正常状态。"""
         payload = {
@@ -689,7 +689,7 @@ class FeishuNotifier:
         }
         self._post_payload(payload, webhook_key, f"盘中无信号状态推送成功 [{webhook_key}]")
 
-    def send_paper_trades(self, trades: list, webhook_key: str = "paper_trading") -> None:
+    def send_paper_trades(self, trades: list, webhook_key: str = "intraday_trading") -> None:
         """推送本轮模拟交易成交记录。"""
         if not trades:
             return
@@ -741,7 +741,7 @@ class FeishuNotifier:
     def send_portfolio(
         self,
         portfolio: pd.DataFrame,
-        webhook_key: str = "portfolio",
+        webhook_key: str = "portfolio_management",
     ) -> None:
         """推送当前自选、持仓市值和收益。"""
         if portfolio.empty:
@@ -757,7 +757,7 @@ class FeishuNotifier:
         self,
         portfolio: pd.DataFrame,
         report,
-        webhook_key: str = "portfolio",
+        webhook_key: str = "portfolio_management",
     ) -> None:
         """一次推送持仓概览和下一工作日操作观察。"""
         if portfolio.empty:
@@ -772,7 +772,7 @@ class FeishuNotifier:
     def send_portfolio_advice(
         self,
         report,
-        webhook_key: str = "portfolio",
+        webhook_key: str = "portfolio_management",
     ) -> None:
         """推送下一工作日规则化操作建议。"""
         if isinstance(report, list):

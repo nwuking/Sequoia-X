@@ -37,7 +37,7 @@ class Settings(BaseSettings):
         prefix = "STRATEGY_WEBHOOK_"
         webhooks: dict[str, str] = {}
         for key, value in os.environ.items():
-            if key.upper().startswith(prefix):
+            if key.upper().startswith(prefix) and value.strip():
                 strategy_key = key[len(prefix):].lower()
                 webhooks[strategy_key] = value
 
@@ -58,7 +58,7 @@ class Settings(BaseSettings):
         prefix = "STRATEGY_WEBHOOK_"
         webhooks: dict[str, str] = dict(self.strategy_webhooks)
         for key, value in os.environ.items():
-            if key.upper().startswith(prefix):
+            if key.upper().startswith(prefix) and value.strip():
                 strategy_key = key[len(prefix):].lower()
                 webhooks[strategy_key] = value
 
@@ -72,7 +72,7 @@ class Settings(BaseSettings):
         优先从 strategy_webhooks 查找，找不到则 fallback 到 feishu_webhook_url。
 
         Args:
-            webhook_key: 策略标识，如 'ma_volume'、'breakout'。
+            webhook_key: 精简群组标识，如 'core_decision'、'intraday_trading'。
 
         Returns:
             对应的 Webhook URL 字符串。

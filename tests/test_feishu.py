@@ -87,7 +87,7 @@ def test_prediction_notification_contains_probability_and_metrics() -> None:
         db_path="data/test.db",
         start_date="2024-01-01",
         feishu_webhook_url="https://example.com/default",
-        strategy_webhooks={"prediction": "https://example.com/prediction"},
+        strategy_webhooks={"core_decision": "https://example.com/core-decision"},
     )
     notifier = FeishuNotifier(settings)
     result = SimpleNamespace(
@@ -117,7 +117,7 @@ def test_prediction_notification_contains_probability_and_metrics() -> None:
             stock_names={"600519": "贵州茅台"},
         )
 
-    assert mock_post.call_args.args[0] == "https://example.com/prediction"
+    assert mock_post.call_args.args[0] == "https://example.com/core-decision"
     body = json.loads(mock_post.call_args.kwargs["data"])
     card_text = json.dumps(body, ensure_ascii=False)
     assert "贵州茅台" in card_text

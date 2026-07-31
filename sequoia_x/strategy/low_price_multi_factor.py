@@ -26,7 +26,7 @@ class LowPriceMultiFactorStrategy(BaseStrategy):
     输出固定限制为前 3 名，适合月度调仓时作为候选持仓池。
     """
 
-    webhook_key: str = "low_price_multi_factor"
+    webhook_key: str = "portfolio_management"
     _MIN_BARS: int = 252
     _MAX_HOLDINGS: int = 3
     _MAX_CLOSE: float = 30.0

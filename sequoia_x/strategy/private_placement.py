@@ -17,10 +17,10 @@ class PrivatePlacementStrategy(BaseStrategy):
     逻辑：筛选最近 7 天内发行日期的定向增发公告，推送至飞书。
 
     Attributes:
-        webhook_key: 路由到 'private_placement' 飞书机器人。
+        webhook_key: 路由到原始策略群。
     """
 
-    webhook_key: str = "private_placement"
+    webhook_key: str = "original_strategies"
     _LOOKBACK_DAYS: int = 7  # 回看天数，覆盖一周内的新公告
 
     def _run(self) -> list[str]:

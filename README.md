@@ -27,9 +27,9 @@ Sequoia-X V2 是面向 A 股市场的量化选股系统，基于现代 Python �
 .venv/bin/python main.py --intraday     # 盘中监控持仓、自选和前一日综合趋势候选
 ```
 
-baostock 登录或增量同步失败时，程序会通过 `system` Webhook 推送红色系统告警，标明异常原因和
+baostock 登录或增量同步失败时，程序会通过 `system_operations` Webhook 推送红色系统告警，标明异常原因和
 本地最新数据日期，然后自动使用本地数据继续执行持仓、全部策略和组合决策。未配置
-`STRATEGY_WEBHOOK_SYSTEM` 时使用默认 Webhook；`--force` 参数仅为兼容旧调度保留。
+`STRATEGY_WEBHOOK_SYSTEM_OPERATIONS` 时使用默认 Webhook；`--force` 参数仅为兼容旧调度保留。
 
 为避免触发 `baostock` 在 `2026-07-29` 这类交易日的访问限制，系统默认启用本地软限流计数器：
 `BAOSTOCK_DAILY_REQUEST_LIMIT=48000`。计数按自然日记录在本地数据库，达到阈值前会提前停止新的
@@ -43,8 +43,8 @@ Brier 分数。预测结果是统计概率，不构成收益保证或投资建�
 `--sync-financials`。低价多因子策略在本地存在财务因子时会自动叠加 `ROE / 营收同比 / 净利润同比 / 毛利率 /
 经营现金流质量 / PE / PB` 等分数；若尚未同步，则自动回退为纯行情多因子版本。
 
-可选配置 `STRATEGY_WEBHOOK_PREDICTION` 使用独立的预测机器人；未配置时回退到默认
-`FEISHU_WEBHOOK_URL`。
+概率预测与综合趋势、组合重点候选统一发送到 `STRATEGY_WEBHOOK_CORE_DECISION`；未配置时回退到
+默认 `FEISHU_WEBHOOK_URL`。
 
 ### 自选与持仓
 
@@ -67,7 +67,7 @@ Brier 分数。预测结果是统计概率，不构成收益保证或投资建�
 ```
 
 数据保存在 `data/portfolio.csv`。日常模式和预测模式每次运行都会用本地最新收盘价刷新
-收益率、市值和浮动盈亏，并向 `STRATEGY_WEBHOOK_PORTFOLIO` 对应机器人推送持仓快照与
+收益率、市值和浮动盈亏，并向 `STRATEGY_WEBHOOK_PORTFOLIO_MANAGEMENT` 对应机器人推送持仓快照与
 下一工作日规则化操作观察；未配置专属机器人时使用默认 Webhook。
 
 ### 日线决策与盘中监控
@@ -84,7 +84,7 @@ Brier 分数。预测结果是统计概率，不构成收益保证或投资建�
 且同一股票同一类信号每天最多成交一次。账户净值和逐笔成交持久化在
 `data/paper_trading.db`，不会修改 `data/portfolio.csv` 中的真实持仓记录。可通过环境变量
 `PAPER_INITIAL_CAPITAL` 和 `PAPER_TRADING_DB_PATH` 调整初始本金及存储位置。
-模拟建仓、增持、减持或清仓发生时，会通过 `paper_trading` Webhook 推送成交记录；未配置专属
+模拟建仓、增持、减持或清仓发生时，会通过 `intraday_trading` Webhook 推送成交记录；未配置专属
 机器人时使用默认 Webhook。
 
 组合决策重点候选会推送每只股票的完整明细，包括策略来源、策略组、信号得分、低价多因子排名

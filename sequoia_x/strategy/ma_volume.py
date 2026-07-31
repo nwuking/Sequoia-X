@@ -16,10 +16,10 @@ class MaVolumeStrategy(BaseStrategy):
     2. 当日成交量 > 20日均量的 1.5 倍（放量确认）
 
     Attributes:
-        webhook_key: 路由到 'ma_volume' 专属飞书机器人。
+        webhook_key: 路由到原始策略群。
     """
 
-    webhook_key: str = "ma_volume"
+    webhook_key: str = "original_strategies"
 
     def _run(self) -> list[str]:
         """
