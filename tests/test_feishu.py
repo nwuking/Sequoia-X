@@ -63,6 +63,30 @@ def test_notification_contains_latest_data_date() -> None:
     assert "2026-07-27" in card_text
 
 
+def test_empty_strategy_result_is_still_pushed() -> None:
+    """策略没有选出股票时也应推送运行完成状态。"""
+    notifier = FeishuNotifier(make_settings())
+
+    with patch("requests.post") as mock_post:
+        mock_post.return_value = MagicMock(
+            status_code=200,
+            json=MagicMock(return_value={"code": 0}),
+        )
+        notifier.send(
+            symbols=[],
+            strategy_name="MaVolumeStrategy",
+            webhook_key="original_strategies",
+            data_date="2026-07-31",
+        )
+
+    assert mock_post.call_count == 1
+    body = json.loads(mock_post.call_args.kwargs["data"])
+    card_text = json.dumps(body, ensure_ascii=False)
+    assert "MaVolumeStrategy" in card_text
+    assert "选股数量：** 0" in card_text
+    assert "无选股结果" in card_text
+
+
 def test_notification_uses_local_chinese_stock_name() -> None:
     """飞书卡片应优先展示本地数据库提供的中文名。"""
     notifier = FeishuNotifier(make_settings())

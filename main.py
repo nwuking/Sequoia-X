@@ -437,18 +437,16 @@ def main() -> None:
         for strategy in strategies:
             strategy_name = type(strategy).__name__
             selected = strategy_selections[strategy_name]
-
-            if selected:
-                stock_names = engine.get_stock_names(selected)
-                notifier.send(
-                    symbols=selected,
-                    strategy_name=strategy_name,
-                    webhook_key=strategy.webhook_key,
-                    data_date=data_date,
-                    stock_names=stock_names,
-                )
-            else:
-                logger.info(f"{strategy_name} 无选股结果，跳过推送")
+            stock_names = engine.get_stock_names(selected) if selected else {}
+            notifier.send(
+                symbols=selected,
+                strategy_name=strategy_name,
+                webhook_key=strategy.webhook_key,
+                data_date=data_date,
+                stock_names=stock_names,
+            )
+            if not selected:
+                logger.info(f"{strategy_name} 无选股结果，已推送空结果状态")
 
         combined = StrategyCombiner.combine(
             strategy_selections,
