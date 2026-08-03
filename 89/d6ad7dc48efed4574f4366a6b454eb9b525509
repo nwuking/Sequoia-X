@@ -1,0 +1,40 @@
+tests/test_feishu.py
+  s_6668d83d705240::t_b149e06675846f 376-411
+  s_6668d83d705240::t_23b18b822d3629 412-439
+  s_6668d83d705240::t_c069ad135ebfcc 132,146,371
+  s_6668d83d705240::t_4491b76047446a 374-375
+sequoia_x/strategy/combiner.py
+  s_6668d83d705240::t_61986f61b8ba2a 27,168,223
+sequoia_x/notify/feishu.py
+  s_6668d83d705240::t_d802dd0cbae2e2 690-697
+  s_6668d83d705240::t_61986f61b8ba2a 67-70,75-76,559-562,580
+  s_6668d83d705240::t_54126257901c11 676-689,698-700,702-758
+  s_6668d83d705240::t_43f976cc92e1db 701
+  s_6668d83d705240::t_b01179e9bb6254 675
+main.py
+  s_6668d83d705240::t_cba096c41b317f 583-624
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "89d6ad7dc48efed4574f4366a6b454eb9b525509",
+  "prompts": {},
+  "logical_commit_id": "89d6ad7dc48efed4574f4366a6b454eb9b525509",
+  "humans": {
+    "h_dc6c9c0bce9380": {
+      "author": "yeyongjun <yeyongjun@bigo.sg>"
+    }
+  },
+  "sessions": {
+    "s_6668d83d705240": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fc6c5-20ce-7d22-a404-89a24530e08f",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "yeyongjun <yeyongjun@bigo.sg>",
+      "total_additions": 210,
+      "total_deletions": 5
+    }
+  }
+}
