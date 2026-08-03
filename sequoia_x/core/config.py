@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     combined_streak_path: str = "data/combined_selection_streak.json"
     intraday_alert_state_path: str = "data/intraday_alert_state.json"
     paper_trading_db_path: str = "data/paper_trading.db"
+    stock_industry_csv_path: str = "data/stock_industry.csv"
     prediction_tracking_db_path: str = "data/prediction_tracking.db"
     paper_initial_capital: float = 100_000.0
     baostock_daily_request_limit: int = 48000

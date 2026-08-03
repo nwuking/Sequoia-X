@@ -92,10 +92,41 @@ def test_intraday_monitor_reads_snapshot_and_deduplicates_alerts() -> None:
 
     assert {item.alert_type for item in first} >= {"硬止损", "放量下跌"}
     assert second == []
-    assert sources["000001"] == {"持仓", "自选", "策略"}
+    assert sources["000001"] == {"持仓", "自选", "趋势"}
     assert sources["000002"] == {"策略"}
-    assert sources["000003"] == {"策略"}
+    assert sources["000003"] == {"重点"}
     assert prices["000001"] == 9.4
+
+
+def test_intraday_monitor_applies_loss_check_to_paper_position() -> None:
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        root = Path(tmp_dir)
+        settings = Settings(
+            db_path=str(root / "test.db"),
+            portfolio_csv_path=str(root / "portfolio.csv"),
+            comprehensive_snapshot_path=str(root / "snapshot.json"),
+            intraday_alert_state_path=str(root / "alerts.json"),
+            strategy_selection_path=str(root / "selections.json"),
+            feishu_webhook_url="https://example.com/hook",
+        )
+        engine = DataEngine(settings)
+        Path(settings.comprehensive_snapshot_path).write_text(
+            json.dumps({"assessments": []}), encoding="utf-8"
+        )
+        quote = IntradayQuote(
+            symbol="000001", price=9.0, previous_close=10.0, open=10.0, high=10.0,
+            low=9.0, volume=0, amount=0, quote_time="2026-07-30T10:30:00",
+        )
+        monitor = IntradayMonitor(
+            engine,
+            settings,
+            quote_fetcher=lambda symbol: quote,
+            paper_positions={"000001": (1000, 10.0)},
+        )
+        alerts = monitor.run()
+
+    assert "持仓亏损" in {item.alert_type for item in alerts}
+    assert monitor.latest_universe_sources["000001"] == {"模拟持仓"}
 
 
 def test_elapsed_volume_ratio_covers_lunch_and_close() -> None:

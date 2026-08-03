@@ -774,8 +774,20 @@ class FeishuNotifier:
         quoted_count: int,
         account_count: int,
         webhook_key: str = "intraday_trading",
+        portfolio=None,
     ) -> None:
         """盘中无新信号时推送监控正常状态。"""
+        portfolio_text = ""
+        if portfolio is not None:
+            portfolio_text = (
+                f"\n**组合总资产：** {portfolio.total_assets:,.2f} 元"
+                f"\n**现金/持仓：** {portfolio.cash:,.2f} / "
+                f"{portfolio.market_value:,.2f} 元"
+                f"\n**累计盈亏：** {portfolio.total_pnl:+,.2f} 元 "
+                f"({portfolio.return_rate:+.2%})"
+                f"\n**仓位/持仓数：** {portfolio.exposure_rate:.1%} / "
+                f"{portfolio.position_count} 只"
+            )
         payload = {
             "msg_type": "interactive",
             "card": {
@@ -793,6 +805,7 @@ class FeishuNotifier:
                                 f"**监控股票：** {monitored_count} 只\n"
                                 f"**取得实时报价：** {quoted_count} 只\n"
                                 f"**模拟账户：** {account_count} 个\n\n"
+                                f"{portfolio_text}\n\n"
                                 "本轮检查完成，**暂无新的盘中预警信号**。"
                             ),
                         },
@@ -802,20 +815,72 @@ class FeishuNotifier:
         }
         self._post_payload(payload, webhook_key, f"盘中无信号状态推送成功 [{webhook_key}]")
 
-    def send_paper_trades(self, trades: list, webhook_key: str = "intraday_trading") -> None:
-        """推送本轮模拟交易成交记录。"""
+    def send_paper_trades(
+        self,
+        trades: list,
+        webhook_key: str = "intraday_trading",
+        portfolio=None,
+        accounts: list | None = None,
+    ) -> None:
+        """推送成交、持仓风险计划和组合净值摘要。"""
         if not trades:
             return
+        account_map = {item.symbol: item for item in accounts or []}
         rows = []
         for trade in trades[:50]:
             xq_code = self._to_xueqiu_code(trade.symbol)
+            account = account_map.get(trade.symbol)
+            fee = float(getattr(trade, "fee", 0) or 0)
+            realized_pnl = float(getattr(trade, "realized_pnl", 0) or 0)
+            shares_after = int(
+                getattr(trade, "shares_after", 0)
+                or (getattr(account, "shares", 0) if account is not None else 0)
+            )
+            average_cost = float(
+                getattr(trade, "average_cost_after", 0)
+                or (getattr(account, "average_cost", 0) if account is not None else 0)
+            )
+            stop_price = float(
+                getattr(trade, "stop_price", 0)
+                or (getattr(account, "initial_stop_price", 0) if account is not None else 0)
+            )
+            position_weight = (
+                float(getattr(account, "market_value", 0)) / float(portfolio.total_assets)
+                if account is not None and portfolio is not None and portfolio.total_assets > 0
+                else 0.0
+            )
+            stop_distance = trade.price / stop_price - 1 if stop_price > 0 else 0.0
+            metadata = (
+                f"等级 {getattr(trade, 'candidate_tier', '-') or '-'}｜"
+                f"评分 {float(getattr(trade, 'priority_score', 0) or 0):.1f}｜"
+                f"策略组 {getattr(trade, 'strategy_family', '未知')}｜"
+                f"行业 {getattr(trade, 'industry', '未知')}"
+            )
+            position_text = (
+                f"成交后 {shares_after}股｜成本 {average_cost:.3f}｜"
+                f"仓位 {position_weight:.1%}"
+            )
+            if shares_after > 0 and stop_price > 0:
+                position_text += f"｜止损 {stop_price:.3f}（缓冲 {stop_distance:.1%}）"
+            pnl_text = f"｜已实现盈亏 {realized_pnl:+,.2f}元" if trade.action in {"减持", "清仓"} else ""
             rows.append(
                 f"[{trade.name} {trade.symbol}](https://xueqiu.com/S/{xq_code})｜"
-                f"**{trade.action}** {trade.shares}股｜价格 {trade.price:.3f}｜"
-                f"金额 {trade.amount:,.2f}元\n{trade.reason}｜{trade.traded_at}"
+                f"**{trade.action}** {trade.shares}股｜成交价 {trade.price:.3f}｜"
+                f"金额 {trade.amount:,.2f}元｜费用 {fee:.2f}元{pnl_text}\n"
+                f"{metadata}\n{position_text}\n"
+                f"信号：{getattr(trade, 'alert_type', '') or trade.reason}｜{trade.traded_at}"
             )
         if len(trades) > 50:
             rows.append(f"其余 {len(trades) - 50} 笔成交因消息长度限制未展示")
+        summary = f"**本轮成交：** {len(trades)} 笔"
+        if portfolio is not None:
+            summary += (
+                f"\n**组合总资产：** {portfolio.total_assets:,.2f} 元｜"
+                f"现金 {portfolio.cash:,.2f} 元"
+                f"\n**组合盈亏：** {portfolio.total_pnl:+,.2f} 元 "
+                f"({portfolio.return_rate:+.2%})｜仓位 {portfolio.exposure_rate:.1%}"
+                f"\n**当前持仓：** {portfolio.position_count} 只"
+            )
         payload = {
             "msg_type": "interactive",
             "card": {
@@ -828,7 +893,7 @@ class FeishuNotifier:
                         "tag": "div",
                         "text": {
                             "tag": "lark_md",
-                            "content": f"**本轮成交：** {len(trades)} 笔",
+                            "content": summary,
                         },
                     },
                     {"tag": "hr"},

@@ -32,6 +32,12 @@ from sequoia_x.monitor import IntradayMonitor
 from sequoia_x.portfolio import PortfolioAdvisor, PortfolioManager
 from sequoia_x.prediction import EnsemblePredictor, PredictionTracker
 from sequoia_x.simulation import PaperTradingManager
+from sequoia_x.backtest import (
+    BacktestConfig,
+    EventDrivenBacktester,
+    WalkForwardValidator,
+    write_backtest_report,
+)
 from sequoia_x.strategy.base import BaseStrategy
 from sequoia_x.strategy.high_tight_flag import HighTightFlagStrategy
 from sequoia_x.strategy.limit_up_shakeout import LimitUpShakeoutStrategy
@@ -75,6 +81,58 @@ def _run_strategies(
             selections[strategy_name] = selected
             logger.info(f"{strategy_name} 选出 {len(selected)} 只股票")
     return selections
+
+
+def _run_backtest(engine: DataEngine, args) -> None:
+    """运行事件驱动回测或滚动样本外验证并输出归因报表。"""
+    start_date, end_date = args.backtest
+    if end_date.lower() == "latest":
+        end_date = engine.get_latest_date() or ""
+        if not end_date:
+            raise RuntimeError("本地数据库没有可用于回测的最新交易日")
+    symbols = None
+    if args.backtest_symbols:
+        symbols = [
+            item.strip().zfill(6)
+            for raw in args.backtest_symbols
+            for item in raw.split(",")
+            if item.strip()
+        ]
+    config = BacktestConfig(initial_capital=args.backtest_capital)
+    backtester = EventDrivenBacktester(engine.db_path, config, symbols=symbols)
+    if args.walk_forward:
+        result = WalkForwardValidator(backtester).run(
+            start_date,
+            end_date,
+            train_days=args.train_days,
+            test_days=args.test_days,
+        )
+        prefix = "walk_forward"
+    else:
+        result = backtester.run(start_date, end_date)
+        prefix = "backtest"
+    paths = write_backtest_report(result, args.backtest_output, prefix=prefix)
+    console = Console()
+    table = Table(title="滚动样本外验证" if args.walk_forward else "事件驱动回测")
+    table.add_column("指标")
+    table.add_column("结果")
+    for key in (
+        "total_return",
+        "annual_return",
+        "max_drawdown",
+        "sharpe",
+        "sortino",
+        "calmar",
+        "benchmark_return",
+        "win_rate",
+        "closed_trades",
+    ):
+        value = result.metrics.get(key, 0.0)
+        is_percentage = key.endswith("return") or key in {"max_drawdown", "win_rate"}
+        display = f"{value:.2%}" if is_percentage else f"{value:.3f}"
+        table.add_row(key, display)
+    console.print(table)
+    console.print(f"报告已写入：{paths['summary']}")
 
 
 def _sync_latest(engine: DataEngine, force: bool, logger, notifier=None) -> bool:
@@ -214,20 +272,23 @@ def _run_intraday_monitor(engine: DataEngine, settings) -> None:
     """执行独立盘中监控，不同步、写入或修改正式日K。"""
     logger = get_logger(__name__)
     logger.info("开始盘中监控和模拟交易")
-    monitor = IntradayMonitor(engine, settings)
-    alerts = monitor.run()
     simulator = PaperTradingManager(
         settings.paper_trading_db_path,
         initial_capital=settings.paper_initial_capital,
         thresholds=engine.thresholds,
     )
+    paper_positions = simulator.position_states()
+    monitor = IntradayMonitor(engine, settings, paper_positions=paper_positions)
+    alerts = monitor.run()
     simulator.sync_universe(
         monitor.latest_universe_sources,
         monitor.latest_names,
         monitor.latest_prices,
     )
+    simulator.snapshot_nav()
     trades = simulator.apply_alerts(alerts)
     accounts = simulator.accounts()
+    paper_portfolio = simulator.portfolio()
     logger.info(
         f"盘中监控完成：监控 {len(monitor.latest_universe_sources)} 只，"
         f"获取报价 {len(monitor.latest_prices)} 只，预警 {len(alerts)} 条，"
@@ -252,6 +313,7 @@ def _run_intraday_monitor(engine: DataEngine, settings) -> None:
             monitored_count=len(monitor.latest_universe_sources),
             quoted_count=len(monitor.latest_prices),
             account_count=len(accounts),
+            portfolio=paper_portfolio,
         )
 
     if trades:
@@ -264,10 +326,15 @@ def _run_intraday_monitor(engine: DataEngine, settings) -> None:
                 f"{trade.price:.3f}", f"{trade.amount:,.2f}", trade.reason,
             )
         console.print(trade_table)
-        notifier.send_paper_trades(trades)
+        notifier.send_paper_trades(
+            trades,
+            portfolio=paper_portfolio,
+            accounts=accounts,
+        )
     console.print(
-        f"模拟账户：{len(accounts)} 只股票，每只初始本金 "
-        f"{settings.paper_initial_capital:,.0f} 元；数据：{settings.paper_trading_db_path}"
+        f"模拟组合：候选 {len(accounts)} 只，持仓 {paper_portfolio.position_count} 只，"
+        f"总资产 {paper_portfolio.total_assets:,.0f} 元，仓位 {paper_portfolio.exposure_rate:.1%}；"
+        f"数据：{settings.paper_trading_db_path}"
     )
 
 
@@ -301,6 +368,30 @@ def main() -> None:
         const="latest",
         metavar="REPORT_DATE",
         help="同步某一期财务因子，例如 --sync-financials 20260331；省略日期则按当前时间推断最近完整报告期",
+    )
+    mode_group.add_argument(
+        "--backtest",
+        nargs=2,
+        metavar=("START_DATE", "END_DATE"),
+        help="事件驱动历史回测，结束日期支持 latest",
+    )
+    parser.add_argument(
+        "--walk-forward",
+        action="store_true",
+        help="配合 --backtest 执行滚动样本外验证",
+    )
+    parser.add_argument("--train-days", type=int, default=252, help="滚动训练窗口交易日数")
+    parser.add_argument("--test-days", type=int, default=63, help="滚动测试窗口交易日数")
+    parser.add_argument(
+        "--backtest-capital", type=float, default=1_000_000, help="回测初始本金"
+    )
+    parser.add_argument(
+        "--backtest-output", default="data/backtest", help="回测与归因报表输出目录"
+    )
+    parser.add_argument(
+        "--backtest-symbols",
+        nargs="+",
+        help="可选股票范围，支持空格或逗号分隔；默认使用本地全部非ST股票",
     )
     parser.add_argument(
         "--sell-position",
@@ -360,6 +451,8 @@ def main() -> None:
             "历史回填" if args.backfill else
             "独立预测" if args.predict else
             "财务同步" if args.sync_financials is not None else
+            "滚动样本外验证" if args.backtest and args.walk_forward else
+            "事件驱动回测" if args.backtest else
             "盘中监控" if args.intraday else
             "组合管理" if (args.portfolio or args.set_watchlist or args.set_position
                            or args.sell_position or args.remove_position) else
@@ -369,6 +462,13 @@ def main() -> None:
 
         # 3. 初始化数据引擎
         engine = DataEngine(settings)
+
+        if args.walk_forward and not args.backtest:
+            parser.error("--walk-forward 必须配合 --backtest 使用")
+
+        if args.backtest:
+            _run_backtest(engine, args)
+            return
 
         if args.backfill:
             # ── 回填模式：单线程保守拉历史 K 线，自动多轮重跑 ──

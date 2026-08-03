@@ -46,6 +46,13 @@ class IntradayAlert:
     price: float
     message: str
     quote_time: str
+    priority_score: float = 0.0
+    candidate_tier: str = "B"
+    stop_price: float = 0.0
+    atr: float = 0.0
+    strategy_family: str = "未知"
+    industry: str = "未知"
+    market_exposure_limit: float = 0.8
 
 
 class IntradayMonitor:
@@ -56,13 +63,16 @@ class IntradayMonitor:
         engine: DataEngine,
         settings: Settings,
         quote_fetcher: Callable[[str], IntradayQuote | None] | None = None,
+        paper_positions: dict[str, tuple[int, float] | dict] | None = None,
     ) -> None:
         self.engine = engine
         self.settings = settings
         self.quote_fetcher = quote_fetcher or self.fetch_quote
+        self.paper_positions = paper_positions or {}
         self.latest_universe_sources: dict[str, set[str]] = {}
         self.latest_names: dict[str, str] = {}
         self.latest_prices: dict[str, float] = {}
+        self.latest_market_exposure_limit = 0.0
 
     @staticmethod
     def fetch_quote(symbol: str) -> IntradayQuote | None:
@@ -105,10 +115,12 @@ class IntradayMonitor:
             return pd.DataFrame()
         return pd.read_csv(path, dtype={"symbol": str})
 
-    def _load_strategy_symbols(self) -> set[str]:
+    def _load_strategy_sources(
+        self,
+    ) -> tuple[set[str], set[str], dict[str, float], dict[str, str]]:
         path = Path(self.settings.strategy_selection_path)
         if not path.exists():
-            return set()
+            return set(), set(), {}, {}
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
             strategy_symbols = {
@@ -120,10 +132,52 @@ class IntradayMonitor:
                 str(symbol).zfill(6)
                 for symbol in payload.get("combined", {}).get("focus", [])
             }
-            return strategy_symbols | combined_symbols
+            combined_scores = {
+                str(item.get("symbol", "")).zfill(6): float(item.get("combined_score", 0) or 0)
+                for item in payload.get("combined", {}).get("details", [])
+                if item.get("symbol")
+            }
+            family_map = {
+                str(item.get("symbol", "")).zfill(6): ",".join(item.get("families", []))
+                for item in payload.get("combined", {}).get("details", [])
+                if item.get("symbol")
+            }
+            return strategy_symbols, combined_symbols, combined_scores, family_map
         except (json.JSONDecodeError, OSError, AttributeError, TypeError):
             logger.warning("策略选股池读取失败，本次仅监控综合趋势快照与组合")
-            return set()
+            return set(), set(), {}, {}
+
+    def _load_industries(self) -> dict[str, str]:
+        path = Path(self.settings.stock_industry_csv_path)
+        if not path.exists():
+            return {}
+        try:
+            frame = pd.read_csv(path, dtype={"symbol": str})
+            if not {"symbol", "industry"}.issubset(frame.columns):
+                return {}
+            return {
+                str(symbol).zfill(6): str(industry)
+                for symbol, industry in zip(frame["symbol"], frame["industry"], strict=True)
+                if pd.notna(industry) and str(industry).strip()
+            }
+        except (OSError, pd.errors.ParserError):
+            logger.warning("股票行业映射读取失败，本次跳过行业集中度控制")
+            return {}
+
+    @staticmethod
+    def _paper_position_values(position: tuple[int, float] | dict) -> tuple[int, float]:
+        if isinstance(position, dict):
+            return int(position.get("shares", 0)), float(position.get("average_cost", 0))
+        return int(position[0]), float(position[1])
+
+    def _market_exposure_limit(self, snapshot: dict) -> float:
+        market = snapshot.get("market", {})
+        cfg = self.engine.thresholds
+        if bool(market.get("strong", False)):
+            return cfg.number("paper_trading", "strong_market_exposure_ratio")
+        if float(market.get("score", 0) or 0) > 0 or float(market.get("breadth", 0) or 0) >= 0.45:
+            return cfg.number("paper_trading", "neutral_market_exposure_ratio")
+        return cfg.number("paper_trading", "weak_market_exposure_ratio")
 
     @staticmethod
     def _elapsed_volume_ratio(quote_time: datetime) -> float:
@@ -187,18 +241,38 @@ class IntradayMonitor:
             or item.get("entry_signal") != "等待确认"
         }
         portfolio = self._load_portfolio()
-        strategy_symbols = self._load_strategy_symbols()
+        strategy_symbols, focus_symbols, combined_scores, family_map = (
+            self._load_strategy_sources()
+        )
+        industries = self._load_industries()
+        self.latest_market_exposure_limit = self._market_exposure_limit(snapshot)
         holdings, costs = self._portfolio_maps(portfolio)
         watchlist = set()
         if not portfolio.empty:
             flags = portfolio.get("is_watchlist", False).astype(str).str.lower().isin({"true", "1"})
             watchlist = set(portfolio.loc[flags, "symbol"].astype(str).str.zfill(6))
-        universe = sorted(set(assessments) | strategy_symbols | holdings | watchlist)
+        paper_holdings = {
+            symbol
+            for symbol, position in self.paper_positions.items()
+            if self._paper_position_values(position)[0] > 0
+        }
+        universe_symbols = (
+            set(assessments)
+            | strategy_symbols
+            | focus_symbols
+            | holdings
+            | watchlist
+            | paper_holdings
+        )
+        universe = sorted(universe_symbols)
         names = self.engine.get_stock_names(universe)
         self.latest_universe_sources = {
             symbol: (
-                ({"策略"} if symbol in assessments or symbol in strategy_symbols else set())
+                ({"趋势"} if symbol in assessments else set())
+                | ({"重点"} if symbol in focus_symbols else set())
+                | ({"策略"} if symbol in strategy_symbols else set())
                 | ({"持仓"} if symbol in holdings else set())
+                | ({"模拟持仓"} if symbol in paper_holdings else set())
                 | ({"自选"} if symbol in watchlist else set())
             )
             for symbol in universe
@@ -219,7 +293,30 @@ class IntradayMonitor:
             stop_price = float(assessment.get("stop_price", 0) or 0)
             score = float(assessment.get("score", 0) or 0)
             entry = str(assessment.get("entry_signal", "等待确认"))
-            average_volume = self._average_volume20(symbol)
+            has_exit_risk = str(assessment.get("exit_signal", "")).endswith("候选")
+            priority_score = max(score, combined_scores.get(symbol, 0.0))
+            candidate_tier = (
+                "A" if symbol in focus_symbols else ("B" if symbol in assessments else "C")
+            )
+            history = self.engine.get_ohlcv(symbol)
+            average_volume = (
+                float(pd.to_numeric(history["volume"], errors="coerce").tail(20).mean())
+                if len(history) >= 20
+                else 0.0
+            )
+            if len(history) >= 15:
+                previous_close = pd.to_numeric(history["close"], errors="coerce").shift(1)
+                true_range = pd.concat(
+                    [
+                        history["high"] - history["low"],
+                        (history["high"] - previous_close).abs(),
+                        (history["low"] - previous_close).abs(),
+                    ],
+                    axis=1,
+                ).max(axis=1)
+                atr = float(true_range.ewm(alpha=1 / 14, adjust=False).mean().iloc[-1])
+            else:
+                atr = 0.0
             elapsed = self._elapsed_volume_ratio(quote_dt)
             projected_ratio = quote.volume / elapsed / average_volume if average_volume > 0 else 0.0
             below_vwap = quote.price < quote.vwap
@@ -234,16 +331,67 @@ class IntradayMonitor:
                         price=quote.price,
                         message=message,
                         quote_time=quote.quote_time,
+                        priority_score=priority_score,
+                        candidate_tier=candidate_tier,
+                        stop_price=stop_price,
+                        atr=atr,
+                        strategy_family=family_map.get(symbol, "未知"),
+                        industry=industries.get(symbol, "未知"),
+                        market_exposure_limit=self.latest_market_exposure_limit,
                     )
                 )
 
+            has_position = symbol in holdings or symbol in paper_holdings
             if symbol in holdings and stop_price > 0 and quote.price <= stop_price:
                 add("高", "硬止损", f"实时价跌破日线计划止损价 {stop_price:.3f}")
-            cost = costs.get(symbol)
-            if symbol in holdings and cost and quote.price / cost - 1 <= cfg.number(
+            paper_position = self.paper_positions.get(symbol, (0, 0.0))
+            paper_shares, paper_cost = self._paper_position_values(paper_position)
+            stored_stop = (
+                float(paper_position.get("initial_stop_price", 0) or 0)
+                if isinstance(paper_position, dict)
+                else 0.0
+            )
+            effective_stop = stop_price if stop_price > 0 else stored_stop
+            if paper_shares > 0 and effective_stop > 0 and quote.price <= effective_stop:
+                add("高", "硬止损", f"实时价跌破模拟持仓止损价 {effective_stop:.3f}")
+            cost = paper_cost if symbol in paper_holdings and paper_cost > 0 else costs.get(symbol)
+            if has_position and cost and quote.price / cost - 1 <= cfg.number(
                 "intraday_monitor", "holding_stop_loss"
             ):
                 add("高", "持仓亏损", f"相对持仓成本亏损已达 {quote.price / cost - 1:.1%}")
+            if paper_shares > 0 and isinstance(paper_position, dict):
+                highest = max(float(paper_position.get("highest_price", 0) or 0), quote.price)
+                profit = quote.price / paper_cost - 1 if paper_cost > 0 else 0.0
+                drawdown = quote.price / highest - 1 if highest > 0 else 0.0
+                if (
+                    highest / paper_cost - 1 >= cfg.number("paper_trading", "trailing_start_profit")
+                    and drawdown <= -cfg.number("paper_trading", "trailing_drawdown")
+                ):
+                    add(
+                        "高",
+                        "移动止盈",
+                        f"持仓最高价回撤 {drawdown:.1%}，当前收益 {profit:+.1%}",
+                    )
+                if len(history) >= 60:
+                    close = pd.to_numeric(history["close"], errors="coerce")
+                    ma20 = float(close.tail(20).mean())
+                    ma60 = float(close.tail(60).mean())
+                    if quote.price <= ma60:
+                        add("高", "趋势清仓", f"实时价跌破MA60 {ma60:.3f}")
+                    elif quote.price <= ma20:
+                        add("中", "趋势减仓", f"实时价跌破MA20 {ma20:.3f}")
+                entry_date = str(paper_position.get("entry_date", ""))
+                if entry_date and not history.empty:
+                    holding_days = int((history["date"].astype(str) >= entry_date).sum())
+                    if (
+                        holding_days >= cfg.integer("paper_trading", "max_holding_days")
+                        and profit < cfg.number("paper_trading", "time_stop_min_return")
+                    ):
+                        add(
+                            "中",
+                            "时间止损",
+                            f"持有 {holding_days} 个交易日，收益仅 {profit:+.1%}",
+                        )
             if (
                 projected_ratio >= cfg.number("intraday_monitor", "sell_volume_ratio")
                 and quote.change_pct <= cfg.number("intraday_monitor", "sell_change_pct")
@@ -256,6 +404,7 @@ class IntradayMonitor:
                 )
             if (
                 score >= cfg.number("intraday_monitor", "breakout_score")
+                and not has_exit_risk
                 and quote.price
                 >= quote.high * cfg.number("intraday_monitor", "breakout_price_to_high")
                 and projected_ratio
@@ -264,7 +413,7 @@ class IntradayMonitor:
                 add("中", "盘中突破候选", f"日线评分 {score:.1f}，预计全天量比 {projected_ratio:.2f}")
             if (
                 symbol not in assessments
-                and symbol in (strategy_symbols | watchlist)
+                and symbol in (strategy_symbols | focus_symbols | watchlist)
                 and quote.change_pct >= cfg.number("intraday_monitor", "strong_change_pct")
                 and quote.price >= quote.vwap
                 and projected_ratio >= cfg.number("intraday_monitor", "strong_volume_ratio")
@@ -278,7 +427,12 @@ class IntradayMonitor:
                 quote_dt.hour == cfg.integer("intraday_monitor", "tail_hour")
                 and quote_dt.minute >= cfg.integer("intraday_monitor", "tail_minute")
             )
-            if is_tail and entry != "等待确认" and quote.price >= quote.vwap:
+            if (
+                is_tail
+                and not has_exit_risk
+                and entry != "等待确认"
+                and quote.price >= quote.vwap
+            ):
                 add("中", "尾盘买点确认", f"前一日信号 {entry}，实时价仍在VWAP上方")
 
         trading_date = max(quote_dates) if quote_dates else datetime.now().date().isoformat()

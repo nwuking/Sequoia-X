@@ -258,7 +258,16 @@ def test_intraday_empty_status_and_paper_trades_are_pushed() -> None:
         symbol="000001", name="平安银行", action="建仓", shares=3000,
         price=10.0, amount=30000.0, reason="盘中突破",
         traded_at="2026-07-30T10:30:00",
+        fee=9.0, alert_type="盘中突破候选", candidate_tier="A",
+        priority_score=88.0, strategy_family="趋势动量", industry="银行",
+        realized_pnl=0.0, shares_after=3000, average_cost_after=10.003,
+        stop_price=9.2,
     )
+    portfolio = SimpleNamespace(
+        total_assets=100500.0, cash=70491.0, total_pnl=500.0,
+        return_rate=0.005, exposure_rate=0.30, position_count=1,
+    )
+    account = SimpleNamespace(symbol="000001", shares=3000, market_value=30000.0)
 
     with patch("requests.post") as mock_post:
         mock_post.return_value = MagicMock(
@@ -266,7 +275,7 @@ def test_intraday_empty_status_and_paper_trades_are_pushed() -> None:
             json=MagicMock(return_value={"code": 0}),
         )
         notifier.send_intraday_status(20, 18, 20)
-        notifier.send_paper_trades([trade])
+        notifier.send_paper_trades([trade], portfolio=portfolio, accounts=[account])
 
     assert mock_post.call_count == 2
     status_text = json.dumps(
@@ -280,6 +289,11 @@ def test_intraday_empty_status_and_paper_trades_are_pushed() -> None:
     assert "模拟交易成交" in trade_text
     assert "建仓" in trade_text
     assert "3000股" in trade_text
+    assert "组合总资产" in trade_text
+    assert "等级 A" in trade_text
+    assert "评分 88.0" in trade_text
+    assert "止损 9.200" in trade_text
+    assert "费用 9.00" in trade_text
     assert "不会修改真实持仓" in trade_text
 
 
