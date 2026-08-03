@@ -3,6 +3,7 @@
 import sqlite3
 from datetime import date
 from pathlib import Path
+import time
 
 import pandas as pd
 
@@ -429,6 +430,102 @@ class DataEngine:
             conn.commit()
         logger.info(f"财务因子同步完成，写入 {len(df)} 条记录")
         return len(df)
+
+    def sync_stock_industries(
+        self,
+        output_path: str,
+        leaders_per_industry: int = 3,
+    ) -> pd.DataFrame:
+        """整理全市场行业归属，并按可获得的规模指标标记行业量化龙头。"""
+        if leaders_per_industry <= 0:
+            raise ValueError("每个行业的龙头数量必须大于0")
+        import akshare as ak
+
+        boards = ak.stock_board_industry_name_em()
+        if boards is None or boards.empty:
+            raise RuntimeError("AKShare 未返回行业板块列表")
+        industry_column = next(
+            (column for column in ("板块名称", "行业名称", "名称") if column in boards),
+            None,
+        )
+        if industry_column is None:
+            raise RuntimeError("行业板块列表缺少名称字段")
+
+        frames: list[pd.DataFrame] = []
+        failures: list[str] = []
+        industries = boards[industry_column].dropna().astype(str).drop_duplicates().tolist()
+        for industry in industries:
+            try:
+                constituents = ak.stock_board_industry_cons_em(symbol=industry)
+            except Exception as exc:
+                logger.warning(f"行业成分同步失败 [{industry}]：{exc}")
+                failures.append(industry)
+                continue
+            if constituents is None or constituents.empty or "代码" not in constituents:
+                failures.append(industry)
+                continue
+            frame = constituents.copy()
+            frame["symbol"] = frame["代码"].astype(str).str.extract(r"(\d{6})")[0]
+            frame["name"] = frame.get("名称", frame["symbol"]).astype(str)
+            frame["industry"] = industry
+            metric_candidates = (
+                ("总市值", "total_market_cap", "总市值"),
+                ("流通市值", "circulating_market_cap", "流通市值"),
+                ("成交额", "turnover", "成交额"),
+            )
+            basis = "成分顺序"
+            metric = pd.Series(range(len(frame), 0, -1), index=frame.index, dtype="float64")
+            metric_name = "fallback_order"
+            for source, target, label in metric_candidates:
+                if source in frame and pd.to_numeric(frame[source], errors="coerce").notna().any():
+                    metric = pd.to_numeric(frame[source], errors="coerce")
+                    metric_name = target
+                    basis = label
+                    break
+            frame["leader_metric"] = metric
+            frame["leader_metric_name"] = metric_name
+            frame["leader_basis"] = basis
+            frames.append(
+                frame[
+                    [
+                        "symbol",
+                        "name",
+                        "industry",
+                        "leader_metric",
+                        "leader_metric_name",
+                        "leader_basis",
+                    ]
+                ].dropna(subset=["symbol"])
+            )
+            time.sleep(0.05)
+
+        if not frames:
+            raise RuntimeError("所有行业成分同步均失败")
+        result = pd.concat(frames, ignore_index=True)
+        # 同一股票可能出现在多个概念近似行业中，按首次稳定出现的行业保留唯一归属。
+        result = result.drop_duplicates(["symbol", "industry"])
+        result = result.sort_values(
+            ["industry", "leader_metric", "symbol"],
+            ascending=[True, False, True],
+            na_position="last",
+        )
+        result["industry_rank"] = result.groupby("industry").cumcount() + 1
+        result["is_industry_leader"] = result["industry_rank"] <= leaders_per_industry
+        result["leader_definition"] = (
+            "行业内按总市值优先、流通市值/成交额降级排序的量化龙头，不代表产业研究结论"
+        )
+        result["updated_at"] = date.today().isoformat()
+        result = result.drop_duplicates("symbol", keep="first").sort_values("symbol")
+        target = Path(output_path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        temporary = target.with_suffix(target.suffix + ".tmp")
+        result.to_csv(temporary, index=False, encoding="utf-8-sig")
+        temporary.replace(target)
+        logger.info(
+            f"行业归属同步完成：{len(result)} 只股票，{result['industry'].nunique()} 个行业，"
+            f"失败行业 {len(failures)} 个，文件 {target}"
+        )
+        return result
 
     # ── 数据同步 ──
 

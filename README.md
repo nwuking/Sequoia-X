@@ -26,6 +26,8 @@ Sequoia-X V2 是面向 A 股市场的量化选股系统，基于现代 Python �
 .venv/bin/python main.py --backfill     # 回填模式：按本地最后日期续传历史K线
 .venv/bin/python main.py --backfill --full-history  # 强制从 START_DATE 全量补齐历史
 .venv/bin/python main.py --sync-financials 20260331  # 同步某一期全市场财务因子
+.venv/bin/python main.py --sync-industries           # 同步行业归属并标记每行业前3名量化龙头
+.venv/bin/python main.py --sync-industries --industry-leaders 5  # 每行业标记前5名
 .venv/bin/python main.py --predict 600519 000001 --horizon 5  # 指定股票预测未来5个交易日
 .venv/bin/python main.py --portfolio    # 刷新持仓收益并推送下一工作日操作观察
 .venv/bin/python main.py --intraday     # 盘中监控持仓、自选和前一日综合趋势候选
@@ -46,6 +48,10 @@ Brier 分数。预测结果是统计概率，不构成收益保证或投资建�
 财务因子同步使用 `AKShare` 对接东方财富的业绩报表和 A 股实时估值数据，建议按季度执行一次
 `--sync-financials`。低价多因子策略在本地存在财务因子时会自动叠加 `ROE / 营收同比 / 净利润同比 / 毛利率 /
 经营现金流质量 / PE / PB` 等分数；若尚未同步，则自动回退为纯行情多因子版本。
+
+行业同步使用 AKShare 行业板块成分数据，写入 `data/stock_industry.csv`。输出包含股票代码、名称、
+行业、行业排名、龙头标记、排序指标和更新时间。龙头默认按行业内总市值排序；数据源缺少总市值时
+依次降级为流通市值、成交额或成分顺序。该标记属于可复现的量化规模口径，不代表产业研究结论。
 
 概率预测与综合趋势、组合重点候选统一发送到 `STRATEGY_WEBHOOK_CORE_DECISION`；未配置时回退到
 默认 `FEISHU_WEBHOOK_URL`。

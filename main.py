@@ -370,6 +370,17 @@ def main() -> None:
         help="同步某一期财务因子，例如 --sync-financials 20260331；省略日期则按当前时间推断最近完整报告期",
     )
     mode_group.add_argument(
+        "--sync-industries",
+        action="store_true",
+        help="同步全市场行业归属并标记行业量化龙头，写入 stock_industry.csv",
+    )
+    parser.add_argument(
+        "--industry-leaders",
+        type=int,
+        default=3,
+        help="配合 --sync-industries 使用：每个行业标记的量化龙头数量，默认3",
+    )
+    mode_group.add_argument(
         "--backtest",
         nargs=2,
         metavar=("START_DATE", "END_DATE"),
@@ -451,6 +462,7 @@ def main() -> None:
             "历史回填" if args.backfill else
             "独立预测" if args.predict else
             "财务同步" if args.sync_financials is not None else
+            "行业同步" if args.sync_industries else
             "滚动样本外验证" if args.backtest and args.walk_forward else
             "事件驱动回测" if args.backtest else
             "盘中监控" if args.intraday else
@@ -487,6 +499,20 @@ def main() -> None:
             report_date = None if args.sync_financials == "latest" else args.sync_financials
             count = engine.sync_financial_factors(report_date=report_date)
             logger.info(f"财务因子同步完成：{count} 条")
+            return
+
+        if args.sync_industries:
+            result = engine.sync_stock_industries(
+                settings.stock_industry_csv_path,
+                leaders_per_industry=args.industry_leaders,
+            )
+            console = Console()
+            console.print(
+                f"行业同步完成：{len(result)} 只股票，"
+                f"{result['industry'].nunique()} 个行业，"
+                f"量化龙头 {int(result['is_industry_leader'].sum())} 只"
+            )
+            console.print(f"CSV：{settings.stock_industry_csv_path}")
             return
 
         if args.intraday:
