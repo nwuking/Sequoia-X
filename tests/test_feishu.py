@@ -129,6 +129,7 @@ def test_comprehensive_notification_includes_regime() -> None:
         regime="主升浪",
         entry_signal="A-平台放量突破",
         exit_signal="趋势持有/观察",
+        reasons=("站上MA20", "突破60日高点", "20日跑赢市场"),
     )
     with patch("requests.post") as mock_post:
         mock_post.return_value = MagicMock(status_code=200)
@@ -142,6 +143,7 @@ def test_comprehensive_notification_includes_regime() -> None:
     card_text = json.dumps(body, ensure_ascii=False)
     assert "趋势状态（regime）：主升浪" in card_text
     assert "买点：A-平台放量突破" in card_text
+    assert "判断依据（reasons）：站上MA20、突破60日高点、20日跑赢市场" in card_text
 
 
 def test_prediction_notification_contains_probability_and_metrics() -> None:
@@ -366,8 +368,73 @@ def test_combined_selection_includes_details_and_splits_by_length() -> None:
     assert "低价多因子" in all_text
     assert "风险通过" in all_text
     assert "趋势状态（regime）" in all_text
+    assert "判断依据（reasons）" in all_text
     assert "平安银行" in all_text
     assert "连续入选 3 次" in all_text
+
+
+def test_portfolio_candidate_hit_is_pushed_separately() -> None:
+    notifier = FeishuNotifier(make_settings())
+    detail = SimpleNamespace(
+        symbol="000001",
+        combined_score=82.0,
+        regime="主升浪",
+        trend_signal="A-平台放量突破",
+        sources=("RpsBreakoutStrategy",),
+        risk_labels=(),
+        vetoed=False,
+        risk_passed=True,
+        reasons=("站上MA20", "20日跑赢市场"),
+    )
+    with patch("requests.post") as mock_post:
+        mock_post.return_value = MagicMock(status_code=200)
+        notifier.send_portfolio_candidate_hits(
+            details=[detail],
+            portfolio_rows={
+                "000001": {
+                    "name": "平安银行",
+                    "shares": 1000,
+                    "is_watchlist": True,
+                }
+            },
+            data_date="2026-07-31",
+            stock_names={"000001": "平安银行"},
+        )
+
+    body = json.loads(mock_post.call_args.kwargs["data"])
+    card_text = json.dumps(body, ensure_ascii=False)
+    assert "候选命中持仓/自选重点提醒" in card_text
+    assert "持仓命中（1000股）" in card_text
+    assert "趋势状态（regime）：** 主升浪" in card_text
+    assert "判断依据（reasons）" in card_text
+
+
+def test_watchlist_candidate_hit_is_labeled_without_position() -> None:
+    notifier = FeishuNotifier(make_settings())
+    detail = SimpleNamespace(
+        symbol="600000",
+        combined_score=65.0,
+        regime="上升趋势",
+        trend_signal="等待确认",
+        sources=("MaVolumeStrategy",),
+        risk_labels=(),
+        vetoed=False,
+        risk_passed=True,
+        reasons=("站上MA20",),
+    )
+    with patch("requests.post") as mock_post:
+        mock_post.return_value = MagicMock(status_code=200)
+        notifier.send_portfolio_candidate_hits(
+            [detail],
+            {"600000": {"name": "浦发银行", "shares": 0, "is_watchlist": True}},
+            "2026-07-31",
+        )
+
+    card_text = json.dumps(
+        json.loads(mock_post.call_args.kwargs["data"]), ensure_ascii=False
+    )
+    assert "自选命中" in card_text
+    assert "持仓命中" not in card_text
 
 
 def test_prediction_tracking_push_contains_accuracy_and_refresh() -> None:

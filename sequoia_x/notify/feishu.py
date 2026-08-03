@@ -64,11 +64,16 @@ class FeishuNotifier:
             if assessment is None:
                 links.append(f"[{name}](https://xueqiu.com/S/{xq_code})")
             else:
+                reasons = tuple(getattr(assessment, "reasons", ()))
+                reason_text = "、".join(str(item) for item in reasons[:12]) or "无"
+                if len(reasons) > 12:
+                    reason_text += f" 等{len(reasons)}项"
                 links.append(
                     f"[{name} {code}](https://xueqiu.com/S/{xq_code})｜"
                     f"趋势状态（regime）：{getattr(assessment, 'regime', '未评估')}｜"
                     f"买点：{getattr(assessment, 'entry_signal', '等待确认')}｜"
-                    f"退出：{getattr(assessment, 'exit_signal', '趋势持有/观察')}"
+                    f"退出：{getattr(assessment, 'exit_signal', '趋势持有/观察')}\n"
+                    f"判断依据（reasons）：{reason_text}"
                 )
 
         symbol_text = "\n".join(links) if links else "（无选股结果）"
@@ -551,6 +556,10 @@ class FeishuNotifier:
             risk_labels = ", ".join(item_risk_labels) if item_risk_labels else "无"
             risk_deduction = float(getattr(item, "risk_deduction", 0.0))
             vetoed = bool(getattr(item, "vetoed", False))
+            item_reasons = tuple(getattr(item, "reasons", ()))
+            reasons_text = "、".join(str(reason) for reason in item_reasons[:12]) or "无"
+            if len(item_reasons) > 12:
+                reasons_text += f" 等{len(item_reasons)}项"
             reason = (
                 "综合趋势明确买点确认"
                 if item.trend_confirmed
@@ -568,6 +577,7 @@ class FeishuNotifier:
                 f"**趋势确认：** {'是' if item.trend_confirmed else '否'}\n"
                 f"**风险标签：** {risk_labels}｜扣分 {risk_deduction:.1f}｜"
                 f"否决 {'是' if vetoed else '否'}\n"
+                f"**判断依据（reasons）：** {reasons_text}\n"
                 f"**策略来源（{item.vote_count}）：** "
                 f"{', '.join(item.sources) if item.sources else '-'}\n"
                 f"**策略组（{item.family_count}）：** "
@@ -662,6 +672,89 @@ class FeishuNotifier:
                 f"组合决策明细推送成功 [{webhook_key}] {index}/{len(batches)}，"
                 f"共 {len(batch)} 只",
             )
+
+    def send_portfolio_candidate_hits(
+        self,
+        details: list,
+        portfolio_rows: dict[str, dict],
+        data_date: str | None,
+        stock_names: dict[str, str] | None = None,
+    ) -> None:
+        """单独推送同时命中候选池与实际持仓/自选列表的股票。"""
+        if not details:
+            return
+        names = stock_names or {}
+        rows: list[str] = []
+        for item in details:
+            portfolio = portfolio_rows.get(item.symbol, {})
+            shares_value = pd.to_numeric(
+                pd.Series([portfolio.get("shares", 0)]), errors="coerce"
+            ).fillna(0).iloc[0]
+            shares = int(float(shares_value))
+            is_watchlist = str(portfolio.get("is_watchlist", False)).lower() in {
+                "true",
+                "1",
+            }
+            hit_types = []
+            if shares > 0:
+                hit_types.append(f"持仓命中（{shares}股）")
+            elif is_watchlist:
+                hit_types.append("自选命中")
+            xq_code = self._to_xueqiu_code(item.symbol)
+            name = names.get(item.symbol, str(portfolio.get("name") or item.symbol))
+            reasons = tuple(getattr(item, "reasons", ()))
+            reasons_text = "、".join(str(reason) for reason in reasons[:12]) or "无"
+            if len(reasons) > 12:
+                reasons_text += f" 等{len(reasons)}项"
+            risk_labels = tuple(getattr(item, "risk_labels", ()))
+            risk_status = (
+                "否决"
+                if getattr(item, "vetoed", False)
+                else "通过"
+                if item.risk_passed
+                else "未通过"
+            )
+            rows.append(
+                f"### 🚨 [{name} {item.symbol}](https://xueqiu.com/S/{xq_code})\n"
+                f"**重点类型：** {'、'.join(hit_types)}\n"
+                f"**组合评分：** {item.combined_score:.1f}｜"
+                f"**趋势状态（regime）：** {getattr(item, 'regime', '未评估')}｜"
+                f"**趋势信号：** {item.trend_signal}\n"
+                f"**策略来源：** {', '.join(item.sources) if item.sources else '-'}\n"
+                f"**风险状态：** {risk_status}｜"
+                f"风险标签 {', '.join(risk_labels) if risk_labels else '无'}\n"
+                f"**判断依据（reasons）：** {reasons_text}"
+            )
+        payload = {
+            "msg_type": "interactive",
+            "card": {
+                "header": {
+                    "title": {
+                        "tag": "plain_text",
+                        "content": "🚨 小 A | 候选命中持仓/自选重点提醒",
+                    },
+                    "template": "orange",
+                },
+                "elements": [
+                    {
+                        "tag": "div",
+                        "text": {
+                            "tag": "lark_md",
+                            "content": (
+                                f"**数据日期：** {data_date or '未知'}\n"
+                                f"**重点命中：** {len(details)} 只\n\n"
+                                + "\n\n".join(rows)
+                            ),
+                        },
+                    }
+                ],
+            },
+        }
+        self._post_payload(
+            payload,
+            "portfolio_management",
+            f"候选命中持仓/自选重点提醒推送成功，共 {len(details)} 只",
+        )
 
     def send_prediction(
         self,

@@ -24,6 +24,7 @@ class CombinedCandidate:
     trend_score: float
     regime: str
     trend_signal: str
+    reasons: tuple[str, ...]
     risk_labels: tuple[str, ...]
     risk_deduction: float
     vetoed: bool
@@ -164,6 +165,7 @@ class StrategyCombiner:
             trend_score = assessment.score if assessment is not None else 0.0
             regime = assessment.regime if assessment is not None else "未评估"
             trend_signal = assessment.entry_signal if assessment is not None else "等待确认"
+            reasons = assessment.reasons if assessment is not None else ()
             risk_labels = risk_labels_by_symbol.get(symbol, set())
             risk_deduction = 0.0
             if "LimitUpShakeoutStrategy" in risk_labels:
@@ -218,6 +220,7 @@ class StrategyCombiner:
                     trend_score=trend_score,
                     regime=regime,
                     trend_signal=trend_signal,
+                    reasons=tuple(reasons),
                     risk_labels=tuple(sorted(risk_labels)),
                     risk_deduction=risk_deduction,
                     vetoed=vetoed,

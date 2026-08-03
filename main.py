@@ -580,6 +580,48 @@ def main() -> None:
             f"趋势确认 {len(combined.trend_confirmed)} 只，"
             f"重点候选 {len(combined.focus)} 只"
         )
+        # 候选池命中实际持仓或自选股时，发送独立的高优先级提醒。
+        portfolio_path = Path(settings.portfolio_csv_path)
+        if portfolio_path.exists() and combined.details:
+            portfolio_candidates = pd.read_csv(portfolio_path, dtype={"symbol": str})
+            if not portfolio_candidates.empty:
+                portfolio_candidates["symbol"] = (
+                    portfolio_candidates["symbol"].astype(str).str.zfill(6)
+                )
+                shares = pd.to_numeric(
+                    portfolio_candidates.get(
+                        "shares", pd.Series(0, index=portfolio_candidates.index)
+                    ),
+                    errors="coerce",
+                ).fillna(0)
+                watchlist = (
+                    portfolio_candidates.get(
+                        "is_watchlist",
+                        pd.Series(False, index=portfolio_candidates.index),
+                    )
+                    .astype(str)
+                    .str.lower()
+                    .isin({"true", "1"})
+                )
+                portfolio_candidates["shares"] = shares
+                portfolio_candidates["is_watchlist"] = watchlist
+                relevant = portfolio_candidates[shares.gt(0) | watchlist]
+                portfolio_rows = relevant.set_index("symbol").to_dict("index")
+                hit_symbols = set(portfolio_rows) & set(combined.all_candidates)
+                hit_details = [
+                    item for item in combined.details if item.symbol in hit_symbols
+                ]
+                if hit_details:
+                    notifier.send_portfolio_candidate_hits(
+                        details=hit_details,
+                        portfolio_rows=portfolio_rows,
+                        data_date=data_date,
+                        stock_names=engine.get_stock_names(list(hit_symbols)),
+                    )
+                    logger.info(
+                        "候选命中持仓/自选重点提醒："
+                        + "，".join(item.symbol for item in hit_details)
+                    )
         if combined.focus:
             consecutive_counts = update_consecutive_counts(
                 settings.combined_streak_path,
