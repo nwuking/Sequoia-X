@@ -1,0 +1,115 @@
+CURRENT_STRATEGY_REVIEW.md
+  s_6668d83d705240::t_45b8d34fb47bc6 1-47
+config/thresholds.ini
+  s_6668d83d705240::t_4eaa4be0754b77 254-257
+  s_6668d83d705240::t_aa27a28a526964 22-30,49-51,82-91
+sequoia_x/strategy/turtle_trade.py
+  s_6668d83d705240::t_8d60465af88704 35,79-83,89-91,93-94
+  s_6668d83d705240::t_aa27a28a526964 45-46,62-76,78
+README.md
+  s_6668d83d705240::t_3dbe3076ad2add 189-190
+  s_6668d83d705240::t_af721dfae23932 225
+  s_6668d83d705240::t_1cf7d574501d05 227-228
+  s_6668d83d705240::t_26b7de78e15f46 15-18,179,181-188
+  s_6668d83d705240::t_f8584c19936c6e 191-192
+  s_6668d83d705240::t_bbd3f95649b2e9 224
+sequoia_x/strategy/high_tight_flag.py
+  s_6668d83d705240::t_aa27a28a526964 67-76,79-83
+tests/test_market_rules.py
+  s_6668d83d705240::t_f6f97d2de15539 1-32
+STRATEGY_REVIEW.md
+  s_6668d83d705240::t_bc9f4c75d87ed3 1-6,46
+  s_6668d83d705240::t_26b7de78e15f46 35-41
+  s_6668d83d705240::t_bc1aece278d174 34
+sequoia_x/strategy/uptrend_limit_down.py
+  s_6668d83d705240::t_fc0a33b1f0af15 6,60-63
+sequoia_x/strategy/limit_up_shakeout.py
+  s_6668d83d705240::t_fc0a33b1f0af15 6,51-57,59,65
+data/backtest/current_rules/backtest_attribution.json
+  s_6668d83d705240::t_9fac0d05a641ec 1-65
+data/backtest/current_rules/backtest_report.md
+  s_6668d83d705240::t_9fac0d05a641ec 1-44
+tests/test_strategy_combiner.py
+  s_6668d83d705240::t_fdad3c09d0af42 41-42,44,48-49
+  s_6668d83d705240::t_c2bc8e4d3ac62c 88-109
+sequoia_x/core/market_rules.py
+  s_6668d83d705240::t_e2832f20d4774b 1-106
+sequoia_x/strategy/low_price_multi_factor.py
+  s_6668d83d705240::t_7ce947d55a9c47 6-7,114,118-146
+  s_6668d83d705240::t_c0c9882cd36613 47-49,166-183,185-188,215-223
+main.py
+  s_6668d83d705240::t_ee22d8ce172de4 549-558,565
+tests/test_rps_breakout.py
+  s_6668d83d705240::t_c2bc8e4d3ac62c 1-54
+sequoia_x/data/engine.py
+  s_6668d83d705240::t_65b6c875cdd977 27-30
+  s_6668d83d705240::t_fdad3c09d0af42 508,511-515,651,654-658
+  s_6668d83d705240::t_aa0647f108cb47 549,691
+  s_6668d83d705240::t_7bad80e7785754 45-47,52-68,121,125,128-140,220-226,228-246
+  s_6668d83d705240::t_b6fc0326f740ee 760-764,768-770,772-774
+  s_6668d83d705240::t_3c8affd5b7830f 495,553-554,638,702
+  s_6668d83d705240::t_1ff93c748a717d 490-494,496-507,509-510,516-520,548,633-637,639-650,652-653,659-663,690,703-706
+  s_6668d83d705240::t_3fb1b4078f3471 11,247-275
+sequoia_x/strategy/private_placement.py
+  s_6668d83d705240::t_2670cea5efe915 46,52-55,62
+sequoia_x/backtest/engine.py
+  s_6668d83d705240::t_18d439497e41c6 18-23,237,264,271
+  s_6668d83d705240::t_8cbda09decc751 273,560-565,580-585
+  s_6668d83d705240::t_b61c993de23773 205,339-342
+  s_6668d83d705240::t_2d16b31c15ca1d 199,210-211,232-236,249-252,258-261,274-282
+  s_6668d83d705240::t_e088aed7a00eae 24,283-292,294-302,304-309
+  s_6668d83d705240::t_cf2b7b8a45cb6f 26,96-105,107,117-124,131-136,138-144,147-160,386-392,395,426-428,430-432
+  s_6668d83d705240::t_3040029fb72e5b 433
+tests/test_backtest.py
+  s_6668d83d705240::t_6b98177b418012 32-33,44
+data/backtest/current_rules/backtest_nav.csv
+  s_6668d83d705240::t_9fac0d05a641ec 1-265
+sequoia_x/strategy/combiner.py
+  s_6668d83d705240::t_ee22d8ce172de4 25,165,219
+  s_6668d83d705240::t_4eaa4be0754b77 27-29,108,113-114,167-176,180-181,186,196-198,201-203,221-223
+  s_6668d83d705240::t_fc0a33b1f0af15 79-84,112
+  s_6668d83d705240::t_4a44284fcb25ae 115
+sequoia_x/strategy/comprehensive_trend.py
+  s_6668d83d705240::t_6895710995c6b7 105-158,366-369
+sequoia_x/notify/feishu.py
+  s_6668d83d705240::t_1edb6ba31e9555 550-553,569-570
+  s_6668d83d705240::t_ee22d8ce172de4 52,57,63-72,74,467,490,549,564
+sequoia_x/strategy/rps_breakout.py
+  s_6668d83d705240::t_8d60465af88704 58-66,74
+  s_6668d83d705240::t_680328bd27e3f1 19-20,24-26,37-42,46,49-55,72-73,75-82
+tests/test_feishu.py
+  s_6668d83d705240::t_d89d68f1cfd6b6 125-146,368
+sequoia_x/core/config.py
+  s_6668d83d705240::t_1cf7d574501d05 8
+  s_6668d83d705240::t_7ce947d55a9c47 16
+tests/test_comprehensive_trend.py
+  s_6668d83d705240::t_c2bc8e4d3ac62c 28-29,37
+data/backtest/current_rules/backtest_trades.csv
+  s_6668d83d705240::t_9fac0d05a641ec 1-753
+data/backtest/current_rules/backtest_summary.json
+  s_6668d83d705240::t_9fac0d05a641ec 1-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "777aad8262952926a6356b5d7e95202238782908",
+  "prompts": {},
+  "logical_commit_id": "777aad8262952926a6356b5d7e95202238782908",
+  "humans": {
+    "h_dc6c9c0bce9380": {
+      "author": "yeyongjun <yeyongjun@bigo.sg>"
+    }
+  },
+  "sessions": {
+    "s_6668d83d705240": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fc6c5-20ce-7d22-a404-89a24530e08f",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "yeyongjun <yeyongjun@bigo.sg>",
+      "total_additions": 2155,
+      "total_deletions": 206
+    }
+  }
+}
