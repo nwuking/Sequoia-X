@@ -3,6 +3,7 @@
 import pandas as pd
 
 from sequoia_x.core.logger import get_logger
+from sequoia_x.core.market_rules import daily_price_limits
 from sequoia_x.strategy.base import BaseStrategy
 
 logger = get_logger(__name__)
@@ -47,17 +48,21 @@ class LimitUpShakeoutStrategy(BaseStrategy):
                 today = df.iloc[-1]  # 今日
 
                 # 条件 1：昨日涨停
-                limit_up_yesterday = prev1["close"] >= prev2["close"] * cfg.number(
-                    "limit_up_shakeout", "limit_up_ratio"
-                )
+                prev2_close = float(prev2.get("raw_close", prev2["close"]))
+                prev1_close = float(prev1.get("raw_close", prev1["close"]))
+                today_open = float(today.get("raw_open", today["open"]))
+                today_close = float(today.get("raw_close", today["close"]))
+                today_low = float(today.get("raw_low", today["low"]))
+                limits = daily_price_limits(symbol, prev2_close)
+                limit_up_yesterday = limits.upper is not None and prev1_close >= limits.upper
                 # 条件 2：今日收阴
-                bearish_today = today["close"] < today["open"]
+                bearish_today = today_close < today_open
                 # 条件 3：今日放量
                 volume_surge = today["volume"] > prev1["volume"] * cfg.number(
                     "limit_up_shakeout", "volume_ratio"
                 )
                 # 条件 4：支撑不破
-                support_hold = today["low"] >= prev1["close"]
+                support_hold = today_low >= prev1_close
 
                 if limit_up_yesterday and bearish_today and volume_surge and support_hold:
                     selected.append(symbol)

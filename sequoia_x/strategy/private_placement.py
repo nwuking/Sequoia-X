@@ -43,22 +43,23 @@ class PrivatePlacementStrategy(BaseStrategy):
         if df.empty:
             return []
 
-        # 按发行日期过滤：只保留最近 N 天内的公告
+        # 优先使用首次可见的公告日期；旧接口缺失时才降级到发行日期。
         today = date.today()
         cutoff = today - timedelta(
             days=self.engine.thresholds.integer("private_placement", "lookback_days")
         )
 
-        df["发行日期"] = pd.to_datetime(df["发行日期"], errors="coerce")
-        df = df.dropna(subset=["发行日期"])
-        df = df[df["发行日期"].dt.date >= cutoff]
+        event_date_column = "公告日期" if "公告日期" in df.columns else "发行日期"
+        df[event_date_column] = pd.to_datetime(df[event_date_column], errors="coerce")
+        df = df.dropna(subset=[event_date_column])
+        df = df[df[event_date_column].dt.date >= cutoff]
 
         if df.empty:
             logger.info("PrivatePlacementStrategy 近期无新定增公告")
             return []
 
         # 按发行日期降序（最新的在前）
-        df = df.sort_values("发行日期", ascending=False)
+        df = df.sort_values(event_date_column, ascending=False)
 
         # 提取股票代码（去掉可能的前缀，保留纯数字）
         symbols = df["股票代码"].astype(str).str.extract(r"(\d{6})")[0].dropna().tolist()

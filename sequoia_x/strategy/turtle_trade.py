@@ -3,7 +3,6 @@
 import pandas as pd
 
 from sequoia_x.core.logger import get_logger
-from sequoia_x.data.baostock_gateway import serialized_baostock
 from sequoia_x.strategy.base import BaseStrategy
 
 logger = get_logger(__name__)
@@ -24,48 +23,6 @@ class TurtleTradeStrategy(BaseStrategy):
     webhook_key: str = "original_strategies"
     _MIN_BARS: int = 21  # 至少需要 21 根 K 线（20日窗口 + 当日）
 
-    @serialized_baostock
-    def _get_market_caps(self, symbols: list[str]) -> dict[str, float]:
-        """通过 baostock 查询候选股票的流通市值（不复权收盘价 × 流通股本）。
-
-        流通股本 = 成交量 / (换手率% / 100)
-        流通市值 = 流通股本 × 不复权收盘价
-        """
-        from datetime import date
-
-        import baostock as bs
-
-        today_str = date.today().strftime("%Y-%m-%d")
-        market_caps: dict[str, float] = {}
-
-        bs.login()
-        try:
-            for symbol in symbols:
-                bs_code = self.engine._to_baostock_code(symbol)
-                rs = bs.query_history_k_data_plus(
-                    bs_code,
-                    "close,volume,turn",
-                    start_date=today_str,
-                    end_date=today_str,
-                    frequency="d",
-                    adjustflag="3",  # 不复权，真实价格
-                )
-                while rs.next():
-                    row = rs.get_row_data()
-                    try:
-                        close = float(row[0])
-                        volume = float(row[1])
-                        turn = float(row[2])
-                        if turn > 0:
-                            circulating_shares = volume / (turn / 100)
-                            market_caps[symbol] = circulating_shares * close
-                    except (ValueError, ZeroDivisionError):
-                        continue
-        finally:
-            bs.logout()
-
-        return market_caps
-
     def _run(self) -> list[str]:
         """
         遍历全市场，返回满足海龟突破条件的股票代码列表。
@@ -75,7 +32,7 @@ class TurtleTradeStrategy(BaseStrategy):
         breakout_days = cfg.integer("turtle_trade", "breakout_days")
         min_turnover = cfg.number("turtle_trade", "min_turnover")
         symbols = self.get_eligible_symbols()
-        candidates: list[str] = []
+        candidates: list[tuple[str, float, float, float]] = []
 
         for symbol in symbols:
             try:
@@ -85,6 +42,8 @@ class TurtleTradeStrategy(BaseStrategy):
 
                 # 向量化：前20日 high 的滚动最大值（不含当日，shift(1) 后取 rolling(20)）
                 df["high_20"] = df["high"].shift(1).rolling(breakout_days).max()
+                df["ma20"] = df["close"].rolling(20).mean()
+                df["vol20"] = df["volume"].rolling(20).mean()
 
                 last = df.iloc[-1]
                 prev = df.iloc[-2]  # 获取昨日数据，用于对比
@@ -100,18 +59,36 @@ class TurtleTradeStrategy(BaseStrategy):
                 # 【新增防守条件】拒绝郑州煤电式的高开低走大阴线！
                 is_yang = last["close"] > last["open"]   # 实体必须是阳线（红柱）
                 is_up = last["close"] > prev["close"]    # 必须是真涨，不能是假阳线
+                volume_ratio = last["volume"] / last["vol20"] if last["vol20"] else 0
+                volume_confirmed = (
+                    cfg.number("turtle_trade", "min_volume_ratio")
+                    <= volume_ratio
+                    <= cfg.number("turtle_trade", "max_volume_ratio")
+                )
+                not_extended = (
+                    last["close"] <= last["high_20"] * (1 + cfg.number("turtle_trade", "max_breakout_extension"))
+                    and last["close"] <= last["ma20"] * (1 + cfg.number("turtle_trade", "max_ma20_deviation"))
+                )
+                day_range = max(float(last["high"] - last["low"]), 1e-9)
+                upper_shadow_ok = (
+                    float(last["high"] - last["close"]) / day_range
+                    <= cfg.number("turtle_trade", "max_upper_shadow_ratio")
+                )
 
-                if breakout and liquid and is_yang and is_up:
-                    candidates.append(symbol)
+                if breakout and liquid and is_yang and is_up and volume_confirmed and not_extended and upper_shadow_ok:
+                    breakout_strength = float(last["close"] / last["high_20"] - 1)
+                    close_location = float((last["close"] - last["low"]) / day_range)
+                    candidates.append(
+                        (symbol, close_location, -breakout_strength, float(last["turnover"]))
+                    )
 
             except Exception as exc:
                 logger.warning(f"[{symbol}] TurtleTradeStrategy 计算失败：{exc}")
                 continue
 
-        # 按流通市值从大到小排序
-        if candidates:
-            market_caps = self._get_market_caps(candidates)
-            candidates.sort(key=lambda s: market_caps.get(s, 0), reverse=True)
+        # 使用本地可复现的信号质量排序：收盘位置、不过度追高、成交额。
+        candidates.sort(key=lambda item: (item[1], item[2], item[3]), reverse=True)
+        selected = [item[0] for item in candidates]
 
-        logger.info(f"TurtleTradeStrategy 选出 {len(candidates)} 只股票")
-        return candidates
+        logger.info(f"TurtleTradeStrategy 选出 {len(selected)} 只股票")
+        return selected

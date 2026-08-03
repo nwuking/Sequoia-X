@@ -22,7 +22,11 @@ class CombinedCandidate:
     factor_score: float | None
     factor_contribution: float
     trend_score: float
+    regime: str
     trend_signal: str
+    risk_labels: tuple[str, ...]
+    risk_deduction: float
+    vetoed: bool
     risk_passed: bool
     trend_confirmed: bool
     combined_score: float
@@ -72,6 +76,12 @@ class StrategyCombiner:
         "事件驱动": 5.0,
         "横截面因子": 10.0,
     }
+    # 历史审计为负或仅提供事件信息的策略只保留为标签，不参与正向买入投票。
+    risk_or_context_only = {
+        "LimitUpShakeoutStrategy",
+        "UptrendLimitDownStrategy",
+        "PrivatePlacementStrategy",
+    }
 
     @classmethod
     def combine(
@@ -95,8 +105,13 @@ class StrategyCombiner:
             "横截面因子": cfg.number("strategy_combiner", "weight_cross_section"),
         }
         sources_by_symbol: dict[str, set[str]] = {}
+        risk_labels_by_symbol: dict[str, set[str]] = {}
         for strategy_name, symbols in selections.items():
             if strategy_name == cls.trend_strategy_name:
+                continue
+            if strategy_name in cls.risk_or_context_only:
+                for symbol in symbols:
+                    risk_labels_by_symbol.setdefault(symbol, set()).add(strategy_name)
                 continue
             for symbol in symbols:
                 sources_by_symbol.setdefault(symbol, set()).add(strategy_name)
@@ -147,14 +162,28 @@ class StrategyCombiner:
             if family_count >= min_family_count:
                 signal_score += cfg.number("strategy_combiner", "cross_family_bonus")
             trend_score = assessment.score if assessment is not None else 0.0
+            regime = assessment.regime if assessment is not None else "未评估"
             trend_signal = assessment.entry_signal if assessment is not None else "等待确认"
+            risk_labels = risk_labels_by_symbol.get(symbol, set())
+            risk_deduction = 0.0
+            if "LimitUpShakeoutStrategy" in risk_labels:
+                risk_deduction += cfg.number(
+                    "strategy_combiner", "limit_up_shakeout_penalty"
+                )
+            vetoed = bool(
+                "UptrendLimitDownStrategy" in risk_labels
+                and cfg.boolean("strategy_combiner", "uptrend_limit_down_veto")
+            )
             has_exit_risk = bool(
                 assessment is not None and assessment.exit_signal.endswith("候选")
             )
+            if assessment is not None and "清仓候选" in assessment.exit_signal:
+                vetoed = True
             risk_passed = bool(
                 assessment is not None
                 and assessment.score >= cfg.number("strategy_combiner", "risk_pass_score")
                 and not has_exit_risk
+                and not vetoed
             )
             trend_confirmed = bool(
                 assessment is not None
@@ -164,10 +193,14 @@ class StrategyCombiner:
             )
             vote_count = len(sources)
             combined_score = round(
-                min(
+                max(
+                    0.0,
+                    min(
                     cfg.number("strategy_combiner", "max_combined_score"),
                     trend_score * cfg.number("strategy_combiner", "trend_score_weight")
-                    + signal_score,
+                    + signal_score
+                    - risk_deduction,
+                    ),
                 ),
                 1,
             )
@@ -183,7 +216,11 @@ class StrategyCombiner:
                     factor_score=factor_score,
                     factor_contribution=factor_contribution,
                     trend_score=trend_score,
+                    regime=regime,
                     trend_signal=trend_signal,
+                    risk_labels=tuple(sorted(risk_labels)),
+                    risk_deduction=risk_deduction,
+                    vetoed=vetoed,
                     risk_passed=risk_passed,
                     trend_confirmed=trend_confirmed,
                     combined_score=combined_score,

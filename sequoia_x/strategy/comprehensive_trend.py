@@ -102,6 +102,60 @@ class ComprehensiveTrendStrategy(BaseStrategy):
         return df
 
     @staticmethod
+    def entry_flags(
+        df: pd.DataFrame,
+        market_strong: bool | pd.Series,
+        thresholds: ThresholdConfig | None = None,
+    ) -> pd.DataFrame:
+        """返回 A/B/C 三类买点布尔序列，供实时评估和回测共同调用。"""
+        cfg = thresholds or ThresholdConfig("config/thresholds.ini")
+        body_range = (df["high"] - df["low"]).clip(lower=1e-9)
+        if isinstance(market_strong, pd.Series):
+            strong = market_strong.reindex(df.index).fillna(False).astype(bool)
+        else:
+            strong = pd.Series(bool(market_strong), index=df.index)
+        breakout = (
+            (df["close"] >= df["high60_prev"])
+            & (
+                df["volume"]
+                >= df["vol20"]
+                * cfg.number("comprehensive_trend", "breakout_volume_ratio")
+            )
+            & (
+                (df["high"] - df["close"]) / body_range
+                <= cfg.number("comprehensive_trend", "breakout_upper_shadow_ratio")
+            )
+            & strong
+        )
+        pullback = (
+            (df["close"] > df["ma60"])
+            & (
+                df["low"]
+                <= df[["ma10", "ma20"]].max(axis=1)
+                * cfg.number("comprehensive_trend", "pullback_price_buffer")
+            )
+            & (df["close"] >= df["ma20"])
+            & (
+                df["volume"]
+                <= df["vol20"]
+                * cfg.number("comprehensive_trend", "pullback_volume_ratio")
+            )
+            & (df["close"] > df["close"].shift(1))
+        )
+        recovery = (
+            (df["close"] > df["ma60"])
+            & (df["close"].shift(1) <= df["ma10"].shift(1))
+            & (df["close"] > df["ma10"])
+            & (df["dif"] > df["dif"].shift(1))
+            & (df["volume"] >= df["vol5"])
+            & (df["close"] >= df["high"].shift(1).rolling(5).max())
+        )
+        return pd.DataFrame(
+            {"entry_a": breakout, "entry_b": pullback, "entry_c": recovery},
+            index=df.index,
+        ).fillna(False)
+
+    @staticmethod
     def _market_context(
         frames: dict[str, pd.DataFrame],
         thresholds: ThresholdConfig | None = None,
@@ -309,32 +363,10 @@ class ComprehensiveTrendStrategy(BaseStrategy):
                 reasons.append("风险：财务质量显著走弱")
         score = round(max(0.0, min(100.0, score - risk_deduction)), 1)
 
-        breakout = (
-            last["close"] >= last["high60_prev"]
-            and last["volume"]
-            >= last["vol20"] * cfg.number("comprehensive_trend", "breakout_volume_ratio")
-            and (last["high"] - last["close"]) / body_range
-            <= cfg.number("comprehensive_trend", "breakout_upper_shadow_ratio")
-            and bool(market["strong"])
-        )
-        pullback = (
-            last["close"] > last["ma60"]
-            and last["low"]
-            <= max(last["ma10"], last["ma20"])
-            * cfg.number("comprehensive_trend", "pullback_price_buffer")
-            and last["close"] >= last["ma20"]
-            and last["volume"]
-            <= last["vol20"] * cfg.number("comprehensive_trend", "pullback_volume_ratio")
-            and last["close"] > prev["close"]
-        )
-        recovery = (
-            last["close"] > last["ma60"]
-            and prev["close"] <= prev["ma10"]
-            and last["close"] > last["ma10"]
-            and last["dif"] > prev["dif"]
-            and last["volume"] >= last["vol5"]
-            and last["close"] >= df["high"].iloc[-6:-1].max()
-        )
+        entry_flags = cls.entry_flags(df, bool(market["strong"]), thresholds=cfg).iloc[-1]
+        breakout = bool(entry_flags["entry_a"])
+        pullback = bool(entry_flags["entry_b"])
+        recovery = bool(entry_flags["entry_c"])
         if breakout and score >= cfg.number("comprehensive_trend", "entry_score_a"):
             entry_signal = "A-平台放量突破"
         elif pullback and score >= cfg.number("comprehensive_trend", "entry_score_b"):

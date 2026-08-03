@@ -25,6 +25,8 @@ def _breakout_frame() -> pd.DataFrame:
 
 def test_assess_detects_strong_breakout_and_sets_stop() -> None:
     frame = _breakout_frame()
+    indicators = ComprehensiveTrendStrategy._indicators(frame)
+    flags = ComprehensiveTrendStrategy.entry_flags(indicators, True)
     result = ComprehensiveTrendStrategy.assess(
         "000001",
         frame,
@@ -32,6 +34,7 @@ def test_assess_detects_strong_breakout_and_sets_stop() -> None:
     )
 
     assert result is not None
+    assert bool(flags.iloc[-1]["entry_a"])
     assert result.regime == "主升浪"
     assert result.entry_signal == "A-平台放量突破"
     assert result.score >= 75

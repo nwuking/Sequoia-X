@@ -8,6 +8,7 @@ import pandas as pd
 
 from sequoia_x.core.config import Settings
 from sequoia_x.core.logger import get_logger
+from sequoia_x.core.market_rules import market_board
 from sequoia_x.core.thresholds import ThresholdConfig
 from sequoia_x.data.baostock_gateway import serialized_baostock
 
@@ -23,6 +24,10 @@ CREATE TABLE IF NOT EXISTS stock_daily (
     high     REAL,
     low      REAL,
     close    REAL,
+    raw_open REAL,
+    raw_high REAL,
+    raw_low  REAL,
+    raw_close REAL,
     volume   REAL,
     turnover REAL,
     UNIQUE (symbol, date)
@@ -37,7 +42,27 @@ _CREATE_STOCK_BASIC_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS stock_basic (
     symbol     TEXT PRIMARY KEY,
     name       TEXT NOT NULL,
+    listing_date TEXT,
+    delisting_date TEXT,
+    board      TEXT,
     updated_at TEXT NOT NULL
+);
+"""
+
+_CREATE_STOCK_STATUS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS stock_status_daily (
+    symbol       TEXT NOT NULL,
+    date         TEXT NOT NULL,
+    name         TEXT,
+    board        TEXT,
+    is_st        INTEGER NOT NULL DEFAULT 0,
+    is_suspended INTEGER NOT NULL DEFAULT 0,
+    can_buy      INTEGER NOT NULL DEFAULT 1,
+    can_sell     INTEGER NOT NULL DEFAULT 1,
+    limit_ratio  REAL,
+    limit_up     REAL,
+    limit_down   REAL,
+    PRIMARY KEY (symbol, date)
 );
 """
 
@@ -93,11 +118,25 @@ class DataEngine:
             conn.execute(_CREATE_TABLE_SQL)
             conn.execute(_CREATE_INDEX_SQL)
             conn.execute(_CREATE_STOCK_BASIC_TABLE_SQL)
+            conn.execute(_CREATE_STOCK_STATUS_TABLE_SQL)
             conn.execute(_CREATE_FINANCIAL_FACTORS_TABLE_SQL)
             conn.execute(_CREATE_FINANCIAL_FACTORS_INDEX_SQL)
             conn.execute(_CREATE_API_USAGE_TABLE_SQL)
+            self._migrate_schema(conn)
             conn.commit()
         logger.info(f"数据库初始化完成：{self.db_path}")
+
+    @staticmethod
+    def _migrate_schema(conn: sqlite3.Connection) -> None:
+        """为旧数据库补充真实成交价和历史状态字段。"""
+        daily_columns = {row[1] for row in conn.execute("PRAGMA table_info(stock_daily)")}
+        for column in ("raw_open", "raw_high", "raw_low", "raw_close"):
+            if column not in daily_columns:
+                conn.execute(f"ALTER TABLE stock_daily ADD COLUMN {column} REAL")
+        basic_columns = {row[1] for row in conn.execute("PRAGMA table_info(stock_basic)")}
+        for column in ("listing_date", "delisting_date", "board"):
+            if column not in basic_columns:
+                conn.execute(f"ALTER TABLE stock_basic ADD COLUMN {column} TEXT")
 
     def _get_api_usage(self, provider: str, usage_date: str | None = None) -> int:
         usage_date = usage_date or date.today().isoformat()
@@ -178,7 +217,62 @@ class DataEngine:
                 conn,
                 params=(symbol,),
             )
+        # 技术指标继续读取复权 OHLC；真实成交和涨跌停判断优先使用 raw_*。
+        for column in ("open", "high", "low", "close"):
+            raw = f"raw_{column}"
+            if raw not in df:
+                df[raw] = df[column]
+            else:
+                df[raw] = df[raw].fillna(df[column])
         return df
+
+    def get_daily_status(self, symbols: list[str], start_date: str, end_date: str) -> pd.DataFrame:
+        """读取历史股票状态；数据缺失时由调用方按代码规则安全降级。"""
+        if not symbols:
+            return pd.DataFrame()
+        rows: list[pd.DataFrame] = []
+        with sqlite3.connect(self.db_path) as conn:
+            for start in range(0, len(symbols), 900):
+                batch = symbols[start : start + 900]
+                placeholders = ",".join("?" for _ in batch)
+                rows.append(
+                    pd.read_sql(
+                        "SELECT * FROM stock_status_daily "
+                        f"WHERE symbol IN ({placeholders}) AND date BETWEEN ? AND ?",
+                        conn,
+                        params=[*batch, start_date, end_date],
+                    )
+                )
+        return pd.concat(rows, ignore_index=True) if rows else pd.DataFrame()
+
+    def _write_daily_status(self, frame: pd.DataFrame) -> None:
+        """把 baostock 日交易状态写入历史状态表。"""
+        if frame.empty or "tradestatus" not in frame:
+            return
+        status = frame[["symbol", "date", "tradestatus", "isST"]].copy()
+        status["is_suspended"] = pd.to_numeric(status["tradestatus"], errors="coerce").fillna(0).ne(1)
+        status["is_st"] = pd.to_numeric(status["isST"], errors="coerce").fillna(0).eq(1)
+        status["board"] = status["symbol"].map(market_board)
+        names = self.get_stock_names(status["symbol"].unique().tolist())
+        status["name"] = status["symbol"].map(names).fillna("")
+        status["can_buy"] = ~status["is_suspended"]
+        status["can_sell"] = ~status["is_suspended"]
+        status["limit_ratio"] = pd.NA
+        status["limit_up"] = pd.NA
+        status["limit_down"] = pd.NA
+        records = status[
+            ["symbol", "date", "name", "board", "is_st", "is_suspended", "can_buy", "can_sell", "limit_ratio", "limit_up", "limit_down"]
+        ].itertuples(index=False, name=None)
+        with sqlite3.connect(self.db_path) as conn:
+            conn.executemany(
+                "INSERT INTO stock_status_daily "
+                "(symbol,date,name,board,is_st,is_suspended,can_buy,can_sell,limit_ratio,limit_up,limit_down) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(symbol,date) DO UPDATE SET "
+                "name=excluded.name,board=excluded.board,is_st=excluded.is_st,"
+                "is_suspended=excluded.is_suspended,can_buy=excluded.can_buy,can_sell=excluded.can_sell",
+                list(records),
+            )
+            conn.commit()
 
     def get_latest_financial_factors(self, symbols: list[str]) -> pd.DataFrame:
         """返回每只股票最新一期财务因子。"""
@@ -393,20 +487,37 @@ class DataEngine:
                 query_ok = False
                 for attempt in range(2):
                     try:
-                        self._ensure_baostock_quota(1)
-                        rs = bs.query_history_k_data_plus(
-                            bs_code,
-                            "date,open,high,low,close,volume,amount",
-                            start_date=start,
-                            end_date=end,
-                            frequency="d",
-                            adjustflag="1",
-                        )
-                        self._increment_api_usage("baostock", 1)
-                        if rs.error_code != "0":
-                            raise RuntimeError(rs.error_msg)
-                        while rs.next():
-                            all_rows.append([symbol] + rs.get_row_data())
+                        frames = []
+                        for adjustflag, prefix in (("1", ""), ("3", "raw_")):
+                            self._ensure_baostock_quota(1)
+                            rs = bs.query_history_k_data_plus(
+                                bs_code,
+                                "date,open,high,low,close,volume,amount,tradestatus,isST",
+                                start_date=start,
+                                end_date=end,
+                                frequency="d",
+                                adjustflag=adjustflag,
+                            )
+                            self._increment_api_usage("baostock", 1)
+                            if rs.error_code != "0":
+                                raise RuntimeError(rs.error_msg)
+                            rows = []
+                            while rs.next():
+                                rows.append(rs.get_row_data())
+                            part = pd.DataFrame(rows, columns=rs.fields)
+                            if prefix:
+                                part = part.rename(
+                                    columns={name: f"raw_{name}" for name in ("open", "high", "low", "close")}
+                                )
+                                for name in ("date", "raw_open", "raw_high", "raw_low", "raw_close"):
+                                    if name not in part:
+                                        part[name] = pd.Series(dtype="object")
+                                part = part[["date", "raw_open", "raw_high", "raw_low", "raw_close"]]
+                            frames.append(part)
+                        if frames and not frames[0].empty:
+                            merged = frames[0].merge(frames[1], on="date", how="left")
+                            merged.insert(0, "symbol", symbol)
+                            all_rows.extend(merged.to_dict("records"))
                         query_ok = True
                         break
                     except Exception as exc:
@@ -434,11 +545,13 @@ class DataEngine:
             logger.info("无新数据（可能非交易日）")
             return 0
 
-        df = pd.DataFrame(all_rows, columns=["symbol", "date", "open", "high", "low", "close", "volume", "turnover"])
-        for col in ["open", "high", "low", "close", "volume", "turnover"]:
+        df = pd.DataFrame(all_rows).rename(columns={"amount": "turnover"})
+        for col in ["open", "high", "low", "close", "volume", "turnover", "raw_open", "raw_high", "raw_low", "raw_close"]:
             df[col] = pd.to_numeric(df[col], errors="coerce")
         df = df.dropna(subset=["close"])
         df = df[df["volume"] > 0]
+        self._write_daily_status(df)
+        df = df.drop(columns=[column for column in ("tradestatus", "isST") if column in df])
 
         count = len(df)
         with sqlite3.connect(self.db_path) as conn:
@@ -517,23 +630,38 @@ class DataEngine:
                 query_ok = False
                 for attempt in range(max_retries):
                     try:
-                        self._ensure_baostock_quota(1)
-                        rs = bs.query_history_k_data_plus(
-                            bs_code,
-                            "date,open,high,low,close,volume,amount",
-                            start_date=start,
-                            end_date=today_str,
-                            frequency="d",
-                            adjustflag="1",  # 后复权
+                        frames = []
+                        for adjustflag, prefix in (("1", ""), ("3", "raw_")):
+                            self._ensure_baostock_quota(1)
+                            rs = bs.query_history_k_data_plus(
+                                bs_code,
+                                "date,open,high,low,close,volume,amount,tradestatus,isST",
+                                start_date=start,
+                                end_date=today_str,
+                                frequency="d",
+                                adjustflag=adjustflag,
+                            )
+                            self._increment_api_usage("baostock", 1)
+                            if rs.error_code != "0":
+                                raise RuntimeError(rs.error_msg)
+                            queried = []
+                            while rs.next():
+                                queried.append(rs.get_row_data())
+                            part = pd.DataFrame(queried, columns=rs.fields)
+                            if prefix:
+                                part = part.rename(
+                                    columns={name: f"raw_{name}" for name in ("open", "high", "low", "close")}
+                                )
+                                for name in ("date", "raw_open", "raw_high", "raw_low", "raw_close"):
+                                    if name not in part:
+                                        part[name] = pd.Series(dtype="object")
+                                part = part[["date", "raw_open", "raw_high", "raw_low", "raw_close"]]
+                            frames.append(part)
+                        rows = (
+                            frames[0].merge(frames[1], on="date", how="left").to_dict("records")
+                            if frames and not frames[0].empty
+                            else []
                         )
-                        self._increment_api_usage("baostock", 1)
-
-                        if rs.error_code != "0":
-                            raise RuntimeError(rs.error_msg)
-
-                        rows = []
-                        while rs.next():
-                            rows.append(rs.get_row_data())
                         query_ok = True
                         break
 
@@ -559,8 +687,8 @@ class DataEngine:
                     skipped += 1
                     continue
 
-                df = pd.DataFrame(rows, columns=rs.fields)
-                for col in ["open", "high", "low", "close", "volume", "amount"]:
+                df = pd.DataFrame(rows)
+                for col in ["open", "high", "low", "close", "volume", "amount", "raw_open", "raw_high", "raw_low", "raw_close"]:
                     df[col] = pd.to_numeric(df[col], errors="coerce")
                 df = df.dropna(subset=["close"])
                 df = df[df["volume"] > 0]
@@ -571,7 +699,11 @@ class DataEngine:
 
                 df["symbol"] = symbol
                 df = df.rename(columns={"amount": "turnover"})
-                df = df[["symbol", "date", "open", "high", "low", "close", "volume", "turnover"]]
+                self._write_daily_status(df)
+                df = df[
+                    ["symbol", "date", "open", "high", "low", "close", "volume", "turnover",
+                     "raw_open", "raw_high", "raw_low", "raw_close"]
+                ]
 
                 try:
                     with sqlite3.connect(self.db_path) as conn:
@@ -625,13 +757,21 @@ class DataEngine:
                 if status == "1" and stock_type == "1":
                     symbol = code.split(".")[1]  # 提取纯数字代码
                     symbols.append(symbol)
-                    stock_basics.append((symbol, name, date.today().isoformat()))
+                    listing_date = row[2] or None
+                    delisting_date = row[3] or None
+                    stock_basics.append(
+                        (symbol, name, listing_date, delisting_date, market_board(symbol), date.today().isoformat())
+                    )
 
             with sqlite3.connect(self.db_path) as conn:
                 conn.executemany(
-                    "INSERT INTO stock_basic (symbol, name, updated_at) VALUES (?, ?, ?) "
+                    "INSERT INTO stock_basic "
+                    "(symbol, name, listing_date, delisting_date, board, updated_at) "
+                    "VALUES (?, ?, ?, ?, ?, ?) "
                     "ON CONFLICT(symbol) DO UPDATE SET "
-                    "name=excluded.name, updated_at=excluded.updated_at",
+                    "name=excluded.name, listing_date=excluded.listing_date, "
+                    "delisting_date=excluded.delisting_date, board=excluded.board, "
+                    "updated_at=excluded.updated_at",
                     stock_basics,
                 )
                 conn.commit()

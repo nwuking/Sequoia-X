@@ -1,0 +1,65 @@
+{
+  "strategy": [
+    {
+      "strategy": "ComprehensiveTrend",
+      "trades": 328,
+      "win_rate": 0.39634146341463417,
+      "realized_pnl": -283955.5725105132,
+      "average_holding_days": 5.969512195121951
+    },
+    {
+      "strategy": "HighTightFlag",
+      "trades": 1,
+      "win_rate": 0.0,
+      "realized_pnl": -8454.82694647411,
+      "average_holding_days": 3.0
+    },
+    {
+      "strategy": "MaVolume",
+      "trades": 166,
+      "win_rate": 0.42771084337349397,
+      "realized_pnl": -148549.00494412737,
+      "average_holding_days": 6.77710843373494
+    },
+    {
+      "strategy": "RpsBreakout",
+      "trades": 15,
+      "win_rate": 0.5333333333333333,
+      "realized_pnl": 18312.21709546698,
+      "average_holding_days": 6.2
+    },
+    {
+      "strategy": "TurtleBreakout",
+      "trades": 234,
+      "win_rate": 0.42735042735042733,
+      "realized_pnl": -25591.302675581683,
+      "average_holding_days": 6.8931623931623935
+    }
+  ],
+  "exit_reason": [
+    {
+      "reason": "初始止损",
+      "trades": 131,
+      "win_rate": 0.0,
+      "realized_pnl": -981129.9809181807
+    },
+    {
+      "reason": "时间止损",
+      "trades": 27,
+      "win_rate": 0.25925925925925924,
+      "realized_pnl": -43991.58284873236
+    },
+    {
+      "reason": "移动止盈",
+      "trades": 171,
+      "win_rate": 0.847953216374269,
+      "realized_pnl": 967786.5158609652
+    },
+    {
+      "reason": "跌破MA60",
+      "trades": 42,
+      "win_rate": 0.023809523809523808,
+      "realized_pnl": -163798.88360512495
+    }
+  ]
+}

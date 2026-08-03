@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import math
+import json
+from pathlib import Path
 
 import pandas as pd
 
@@ -42,6 +44,9 @@ class LowPriceMultiFactorStrategy(BaseStrategy):
     def _safe_zscore(series: pd.Series, ascending: bool = True) -> pd.Series:
         """对横截面数据做稳健标准化，避免标准差为 0 的异常。"""
         cleaned = pd.to_numeric(series, errors="coerce").replace([math.inf, -math.inf], pd.NA)
+        if cleaned.notna().sum() >= 10:
+            lower, upper = cleaned.quantile([0.01, 0.99])
+            cleaned = cleaned.clip(lower=lower, upper=upper)
         mean = cleaned.mean()
         std = cleaned.std(ddof=0)
         if pd.isna(std) or std == 0:
@@ -106,12 +111,39 @@ class LowPriceMultiFactorStrategy(BaseStrategy):
         }
 
     def _run(self) -> list[str]:
-        """返回当前横截面评分最高的前 3 只低价股。"""
+        """按月锁定目标组合，月内重复运行不因短期排名变化而换仓。"""
         cfg = self.engine.thresholds
         ranked = self.rank_candidates(limit=cfg.integer("low_price_multi_factor", "ranking_limit"))
         selected = ranked.head(cfg.integer("low_price_multi_factor", "max_holdings"))
-        logger.info(f"LowPriceMultiFactorStrategy 选出 {len(selected)} 只股票")
-        return selected["symbol"].tolist() if not selected.empty else []
+        latest_date = self.engine.get_latest_date()
+        if latest_date is None:
+            symbols = selected["symbol"].tolist() if not selected.empty else []
+            return symbols
+        month = str(latest_date)[:7]
+        configured = getattr(self.settings, "low_price_rebalance_state_path", None)
+        state_path = Path(configured) if configured else Path(self.engine.db_path).with_name(
+            "low_price_rebalance_state.json"
+        )
+        previous: dict = {}
+        if state_path.exists():
+            try:
+                previous = json.loads(state_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                previous = {}
+        if previous.get("month") == month:
+            symbols = [str(item) for item in previous.get("symbols", [])]
+            logger.info(f"LowPriceMultiFactorStrategy 沿用 {month} 月度组合 {len(symbols)} 只")
+            return symbols
+        symbols = selected["symbol"].tolist() if not selected.empty else []
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = state_path.with_suffix(state_path.suffix + ".tmp")
+        temporary.write_text(
+            json.dumps({"month": month, "data_date": latest_date, "symbols": symbols}, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        temporary.replace(state_path)
+        logger.info(f"LowPriceMultiFactorStrategy 生成 {month} 月度组合 {len(symbols)} 只")
+        return symbols
 
     def rank_candidates(self, limit: int = 10) -> pd.DataFrame:
         """返回按分数降序排列的候选股票明细。"""
@@ -131,11 +163,29 @@ class LowPriceMultiFactorStrategy(BaseStrategy):
 
         frame = pd.DataFrame(rows)
         cfg = self.engine.thresholds
+        industry_path = getattr(self.settings, "stock_industry_csv_path", "")
+        if industry_path and pd.io.common.file_exists(industry_path):
+            industries = pd.read_csv(industry_path, dtype={"symbol": str})
+            if {"symbol", "industry"}.issubset(industries.columns):
+                industries["symbol"] = industries["symbol"].str.zfill(6)
+                frame = frame.merge(industries[["symbol", "industry"]], on="symbol", how="left")
+        if "industry" not in frame:
+            frame["industry"] = "未知"
+
+        def factor_score(column: str, ascending: bool = True) -> pd.Series:
+            # 样本足够时先做行业内标准化，减少行业天然差异带来的偏置。
+            sizes = frame.groupby("industry")[column].transform("count")
+            within = frame.groupby("industry", group_keys=False)[column].transform(
+                lambda item: self._safe_zscore(item, ascending=ascending)
+            )
+            market = self._safe_zscore(frame[column], ascending=ascending)
+            return within.where(sizes >= 5, market)
+
         frame["score"] = (
-            cfg.number("low_price_multi_factor", "weight_momentum") * self._safe_zscore(frame["momentum"], ascending=True)
-            + cfg.number("low_price_multi_factor", "weight_low_volatility") * self._safe_zscore(frame["volatility"], ascending=False)
-            + cfg.number("low_price_multi_factor", "weight_trend") * self._safe_zscore(frame["trend_strength"], ascending=True)
-            + cfg.number("low_price_multi_factor", "weight_liquidity") * self._safe_zscore(frame["turnover_ma20"], ascending=True)
+            cfg.number("low_price_multi_factor", "weight_momentum") * factor_score("momentum", ascending=True)
+            + cfg.number("low_price_multi_factor", "weight_low_volatility") * factor_score("volatility", ascending=False)
+            + cfg.number("low_price_multi_factor", "weight_trend") * factor_score("trend_strength", ascending=True)
+            + cfg.number("low_price_multi_factor", "weight_liquidity") * factor_score("turnover_ma20", ascending=True)
         )
         # 组合层专用分数弱化动量和趋势，优先提供低波动与流动性证据，
         # 避免和 ComprehensiveTrendStrategy 对同一趋势信号重复加权。
@@ -163,7 +213,15 @@ class LowPriceMultiFactorStrategy(BaseStrategy):
                 on="symbol",
                 how="left",
             )
-            cashflow_quality = frame["operating_cashflow_ps"] / frame["eps"].replace(0, pd.NA)
+            eps = pd.to_numeric(frame["eps"], errors="coerce")
+            cashflow_quality = frame["operating_cashflow_ps"] / eps.where(eps.abs() >= 0.01)
+            # 亏损企业的负PE、净资产为负的PB不参与“越低越好”排序。
+            frame["pe_dynamic"] = pd.to_numeric(frame["pe_dynamic"], errors="coerce").where(
+                lambda item: item > 0
+            )
+            frame["pb"] = pd.to_numeric(frame["pb"], errors="coerce").where(
+                lambda item: item > 0
+            )
             frame["score"] = (
                 frame["score"]
                 + cfg.number("low_price_multi_factor", "weight_roe") * self._safe_zscore(frame["roe"], ascending=True)

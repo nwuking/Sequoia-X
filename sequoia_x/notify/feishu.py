@@ -49,18 +49,29 @@ class FeishuNotifier:
         strategy_name: str,
         data_date: str | None = None,
         stock_names: dict[str, str] | None = None,
+        assessments: dict[str, object] | None = None,
     ) -> dict:
         today = date.today().strftime("%Y-%m-%d")
         data_date_text = data_date or "未知"
         names = stock_names or {}
+        assessment_map = assessments or {}
 
         links: list[str] = []
         for code in symbols:
             xq_code = self._to_xueqiu_code(code)
             name = names.get(code, xq_code)
-            links.append(f"[{name}](https://xueqiu.com/S/{xq_code})")
+            assessment = assessment_map.get(code)
+            if assessment is None:
+                links.append(f"[{name}](https://xueqiu.com/S/{xq_code})")
+            else:
+                links.append(
+                    f"[{name} {code}](https://xueqiu.com/S/{xq_code})｜"
+                    f"趋势状态（regime）：{getattr(assessment, 'regime', '未评估')}｜"
+                    f"买点：{getattr(assessment, 'entry_signal', '等待确认')}｜"
+                    f"退出：{getattr(assessment, 'exit_signal', '趋势持有/观察')}"
+                )
 
-        symbol_text = " ".join(links) if links else "（无选股结果）"
+        symbol_text = "\n".join(links) if links else "（无选股结果）"
 
         return {
             "msg_type": "interactive",
@@ -453,6 +464,7 @@ class FeishuNotifier:
         webhook_key: str = "default",
         data_date: str | None = None,
         stock_names: dict[str, str] | None = None,
+        assessments: dict[str, object] | None = None,
     ) -> None:
         """
         将选股结果格式化为飞书卡片消息并 POST 至对应 Webhook。
@@ -475,6 +487,7 @@ class FeishuNotifier:
             strategy_name,
             data_date=data_date,
             stock_names=stock_names,
+            assessments=assessments,
         )
 
         self._post_payload(
@@ -533,6 +546,11 @@ class FeishuNotifier:
             name = stock_names.get(item.symbol, item.symbol)
             factor_rank = str(item.factor_rank) if item.factor_rank is not None else "未进入前10"
             factor_score = f"{item.factor_score:.3f}" if item.factor_score is not None else "-"
+            regime = str(getattr(item, "regime", "未评估"))
+            item_risk_labels = getattr(item, "risk_labels", ())
+            risk_labels = ", ".join(item_risk_labels) if item_risk_labels else "无"
+            risk_deduction = float(getattr(item, "risk_deduction", 0.0))
+            vetoed = bool(getattr(item, "vetoed", False))
             reason = (
                 "综合趋势明确买点确认"
                 if item.trend_confirmed
@@ -543,10 +561,13 @@ class FeishuNotifier:
                 f"｜连续入选 {counts.get(item.symbol, 1)} 次\n"
                 f"**组合评分：** {item.combined_score:.1f}｜"
                 f"**趋势评分：** {item.trend_score:.1f}｜"
+                f"**趋势状态（regime）：** {regime}｜"
                 f"**趋势信号：** {item.trend_signal}\n"
                 f"**入选原因：** {reason}｜"
                 f"**风险通过：** {'是' if item.risk_passed else '否'}｜"
                 f"**趋势确认：** {'是' if item.trend_confirmed else '否'}\n"
+                f"**风险标签：** {risk_labels}｜扣分 {risk_deduction:.1f}｜"
+                f"否决 {'是' if vetoed else '否'}\n"
                 f"**策略来源（{item.vote_count}）：** "
                 f"{', '.join(item.sources) if item.sources else '-'}\n"
                 f"**策略组（{item.family_count}）：** "

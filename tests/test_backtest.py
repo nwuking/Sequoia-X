@@ -29,6 +29,8 @@ def build_market(root: Path, periods: int = 360) -> str:
             trend = 10 + offset + index * 0.035
             cycle = (index % 30) * 0.01
             close = trend + cycle
+            if index >= 120 and index % 60 == 0:
+                close += 1.0
             if index > periods - 20:
                 close -= (index - (periods - 20)) * 0.25
             records.append(
@@ -39,7 +41,7 @@ def build_market(root: Path, periods: int = 360) -> str:
                     close * 1.01,
                     close * 0.99,
                     close,
-                    2_000_000 + index * 1000,
+                    4_000_000 if index >= 120 and index % 60 == 0 else 2_000_000,
                     150_000_000,
                 )
             )

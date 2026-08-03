@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     db_path: str = "data/sequoia_v2.db"
-    start_date: str = "2024-01-01"
+    start_date: str = "2015-01-01"
     portfolio_csv_path: str = "data/portfolio.csv"
     comprehensive_snapshot_path: str = "data/comprehensive_trend_latest.json"
     strategy_selection_path: str = "data/strategy_selection_latest.json"
@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     intraday_alert_state_path: str = "data/intraday_alert_state.json"
     paper_trading_db_path: str = "data/paper_trading.db"
     stock_industry_csv_path: str = "data/stock_industry.csv"
+    low_price_rebalance_state_path: str | None = None
     prediction_tracking_db_path: str = "data/prediction_tracking.db"
     paper_initial_capital: float = 100_000.0
     baostock_daily_request_limit: int = 48000

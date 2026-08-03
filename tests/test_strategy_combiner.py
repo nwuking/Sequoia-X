@@ -38,15 +38,15 @@ def test_combiner_builds_resonance_and_trend_confirmed_focus_pool() -> None:
 
     result = StrategyCombiner.combine(selections, assessments)
 
-    assert result.multi_strategy == ("000002", "000004")
-    assert result.multi_family == ("000002",)
+    assert set(result.multi_strategy) == {"000002", "000004"}
+    assert result.multi_family == ()
     assert result.trend_confirmed == ("000001",)
-    assert result.focus == ("000001", "000002")
+    assert result.focus == ("000001",)
     assert "000003" in result.all_candidates
     detail = {item.symbol: item for item in result.details}
     assert detail["000001"].vote_count == 1
-    assert detail["000002"].family_count == 2
-    assert detail["000002"].families == ("事件驱动", "趋势动量")
+    assert detail["000002"].family_count == 1
+    assert detail["000002"].families == ("趋势动量",)
     assert detail["000002"].risk_passed is True
     assert detail["000004"].family_count == 1
     assert detail["000004"].risk_passed is False
@@ -85,3 +85,25 @@ def test_combiner_uses_detailed_factor_ranking_with_decreasing_weight() -> None:
     assert details["000004"].factor_contribution == 6.0
     assert details["000008"].factor_contribution == 3.0
     assert details["000004"].factor_score == 1.0
+
+
+def test_combiner_penalizes_divergence_and_vetoes_limit_down() -> None:
+    selections = {
+        "RpsBreakoutStrategy": ["000001", "000002"],
+        "LimitUpShakeoutStrategy": ["000001"],
+        "UptrendLimitDownStrategy": ["000002"],
+    }
+    assessments = [
+        _assessment("000001", 80, "A-平台放量突破"),
+        _assessment("000002", 80, "A-平台放量突破"),
+    ]
+
+    result = StrategyCombiner.combine(selections, assessments)
+    details = {item.symbol: item for item in result.details}
+
+    assert details["000001"].risk_deduction == 15
+    assert details["000001"].vetoed is False
+    assert details["000001"].combined_score == 40
+    assert details["000002"].vetoed is True
+    assert details["000002"].risk_passed is False
+    assert "000002" not in result.focus

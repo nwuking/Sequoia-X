@@ -15,6 +15,14 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from sequoia_x.core.market_rules import (
+    cannot_buy_at_open,
+    cannot_sell_at_open,
+    market_board,
+    price_limit_ratio,
+)
+from sequoia_x.strategy.comprehensive_trend import ComprehensiveTrendStrategy
+
 
 @dataclass(frozen=True)
 class BacktestConfig:
@@ -62,8 +70,6 @@ class EventDrivenBacktester:
         "MaVolume": "sig_ma_volume",
         "TurtleBreakout": "sig_turtle",
         "HighTightFlag": "sig_flag",
-        "LimitUpShakeout": "sig_shakeout",
-        "UptrendLimitDown": "sig_reversal",
         "RpsBreakout": "sig_rps",
         "ComprehensiveTrend": "sig_trend",
         "LowPriceFactor": "sig_factor",
@@ -87,8 +93,18 @@ class EventDrivenBacktester:
             symbol_sql = f" AND symbol IN ({placeholders})"
             params.extend(self.symbols)
         with sqlite3.connect(self.db_path) as conn:
+            daily_columns = {
+                row[1] for row in conn.execute("PRAGMA table_info(stock_daily)").fetchall()
+            }
+            raw_columns = [
+                column for column in ("raw_open", "raw_high", "raw_low", "raw_close")
+                if column in daily_columns
+            ]
+            select_columns = "symbol,date,open,high,low,close,volume,turnover"
+            if raw_columns:
+                select_columns += "," + ",".join(raw_columns)
             frame = pd.read_sql(
-                "SELECT symbol,date,open,high,low,close,volume,turnover "
+                f"SELECT {select_columns} "
                 f"FROM stock_daily WHERE date <= ?{symbol_sql} ORDER BY symbol,date",
                 conn,
                 params=params,
@@ -99,15 +115,49 @@ class EventDrivenBacktester:
                 "ORDER BY symbol,announcement_date",
                 conn,
             )
+            status_exists = conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='stock_status_daily'"
+            ).fetchone()
+            statuses = (
+                pd.read_sql("SELECT * FROM stock_status_daily WHERE date <= ?", conn, params=[end_date])
+                if status_exists
+                else pd.DataFrame()
+            )
         if frame.empty:
             raise RuntimeError("回测区间没有日线数据")
         frame["date"] = pd.to_datetime(frame["date"])
         for column in ("open", "high", "low", "close", "volume", "turnover"):
             frame[column] = pd.to_numeric(frame[column], errors="coerce")
+        for column in ("open", "high", "low", "close"):
+            raw = f"raw_{column}"
+            if raw not in frame:
+                frame[raw] = frame[column]
+            else:
+                frame[raw] = pd.to_numeric(frame[raw], errors="coerce").fillna(frame[column])
         frame = frame.dropna(subset=["open", "high", "low", "close"])
+        if not statuses.empty:
+            statuses["date"] = pd.to_datetime(statuses["date"])
+            keep = [
+                column for column in ("symbol", "date", "name", "board", "is_st", "is_suspended", "can_buy", "can_sell")
+                if column in statuses
+            ]
+            frame = frame.merge(statuses[keep], on=["symbol", "date"], how="left")
         if not names.empty:
             frame = frame.merge(names, on="symbol", how="left")
-            frame = frame[~frame["name"].fillna("").str.upper().str.contains("ST")]
+            if "name_x" in frame:
+                frame["name"] = frame["name_x"].fillna(frame.get("name_y"))
+                frame = frame.drop(columns=[column for column in ("name_x", "name_y") if column in frame])
+        if "is_st" not in frame:
+            frame["is_st"] = frame.get("name", pd.Series("", index=frame.index)).fillna("").str.upper().str.contains("ST")
+        else:
+            fallback_st = frame.get("name", pd.Series("", index=frame.index)).fillna("").str.upper().str.contains("ST")
+            frame["is_st"] = frame["is_st"].fillna(fallback_st).astype(bool)
+        frame = frame[~frame["is_st"]]
+        frame["board"] = frame.get("board", pd.Series(index=frame.index, dtype=object))
+        frame["board"] = frame["board"].fillna(frame["symbol"].map(market_board))
+        frame["is_suspended"] = frame.get("is_suspended", False)
+        frame["can_buy"] = frame.get("can_buy", True)
+        frame["can_sell"] = frame.get("can_sell", True)
         if not financials.empty:
             financials["announcement_date"] = pd.to_datetime(
                 financials["announcement_date"], errors="coerce"
@@ -146,15 +196,19 @@ class EventDrivenBacktester:
             lambda item: item.shift(1).rolling(20).max()
         )
         df["high120"] = groups["high"].transform(lambda item: item.rolling(120).max())
+        df["high120_prev"] = groups["high"].transform(lambda item: item.shift(1).rolling(120).max())
         df["low40"] = groups["low"].transform(lambda item: item.rolling(40).min())
         df["high40"] = groups["high"].transform(lambda item: item.rolling(40).max())
         df["low10"] = groups["low"].transform(lambda item: item.rolling(10).min())
         df["high10"] = groups["high"].transform(lambda item: item.rolling(10).max())
         df["prev_close"] = groups["close"].shift(1)
+        df["prev_raw_close"] = groups["raw_close"].shift(1)
         df["prev2_close"] = groups["close"].shift(2)
         df["prev_open"] = groups["open"].shift(1)
         df["prev_volume"] = groups["volume"].shift(1)
         df["ret120"] = groups["close"].pct_change(120, fill_method=None)
+        df["ret60"] = groups["close"].pct_change(60, fill_method=None)
+        df["ret20"] = groups["close"].pct_change(20, fill_method=None)
         df["ret252_21"] = groups["close"].transform(
             lambda item: item.shift(21) / item.shift(252) - 1
         )
@@ -175,6 +229,12 @@ class EventDrivenBacktester:
             lambda item: item.ewm(alpha=1 / 14, adjust=False).mean()
         )
         df["rps"] = df.groupby("date")["ret120"].rank(pct=True) * 100
+        df["rps60"] = df.groupby("date")["ret60"].rank(pct=True) * 100
+        df["rps20"] = df.groupby("date")["ret20"].rank(pct=True) * 100
+        day_range = (df["high"] - df["low"]).replace(0, np.nan)
+        upper_shadow_ratio = (df["high"] - df["close"]) / day_range
+        volume_ratio = df["volume"] / df["vol20"]
+        daily_limit_ratio = df["symbol"].map(lambda symbol: price_limit_ratio(symbol) or 0.0)
 
         df["sig_ma_volume"] = (
             (groups["ma5"].shift(1) <= groups["ma20"].shift(1))
@@ -186,31 +246,67 @@ class EventDrivenBacktester:
             & (df["turnover"] > 100_000_000)
             & (df["close"] > df["open"])
             & (df["close"] > df["prev_close"])
+            & volume_ratio.between(1.2, 3.0)
+            & (df["close"] <= df["high20_prev"] * 1.05)
+            & (df["close"] <= df["ma20"] * 1.15)
+            & (upper_shadow_ratio <= 0.35)
         )
         df["sig_flag"] = (
             (df["high40"] / df["low40"] > 1.6)
             & (df["high10"] / df["low10"] < 1.15)
             & (df["low10"] >= df["high40"] * 0.8)
-            & (df["volume"] < df["vol20"] * 0.6)
+            & (groups["volume"].shift(1) < groups["vol20"].shift(1) * 0.6)
+            & (df["close"] > groups["high10"].shift(1))
+            & (df["volume"] >= df["vol20"] * 0.8)
+            & (upper_shadow_ratio <= 0.35)
         )
         df["sig_shakeout"] = (
-            (df["prev_close"] >= df["prev2_close"] * 1.095)
+            (df["prev_close"] >= df["prev2_close"] * (1 + daily_limit_ratio - 0.005))
             & (df["close"] < df["open"])
             & (df["volume"] > df["prev_volume"] * 2)
             & (df["low"] >= df["prev_close"])
         )
         df["sig_reversal"] = (
             (groups["ma20"].shift(1) > groups["ma60"].shift(1))
-            & (df["close"] <= df["prev_close"] * 0.905)
+            & (df["close"] <= df["prev_close"] * (1 - daily_limit_ratio + 0.005))
             & (df["volume"] > df["vol20"] * 2)
         )
-        df["sig_rps"] = (df["rps"] >= 90) & (df["close"] >= df["high120"] * 0.90)
-        df["sig_trend"] = (
-            (df["close"] > df["ma20"])
-            & (df["ma20"] > df["ma60"])
-            & (df["rsi"].between(55, 80))
-            & ((df["close"] > df["high20_prev"]) | (df["low"] <= df["ma20"] * 1.02))
+        df["sig_rps"] = (
+            (df["rps"] >= 90)
+            & (df["rps60"] >= 80)
+            & (df["rps20"] >= 70)
+            & (df["close"] > df["high120_prev"])
+            & (groups["turnover"].transform(lambda item: item.rolling(20).mean()) >= 80_000_000)
+            & volume_ratio.between(1.2, 3.0)
+            & (df["close"] <= df["ma20"] * 1.12)
         )
+        # 与正式综合趋势策略共用 A/B/C 买点实现，避免回测维护另一套入场条件。
+        comprehensive = pd.concat(
+            [
+                ComprehensiveTrendStrategy._indicators(group)
+                for _, group in df.groupby("symbol", sort=False)
+            ]
+        ).sort_index()
+        equal_market_return = df.groupby("date").apply(
+            lambda group: group["close"].div(group["prev_close"]).sub(1).mean(),
+            include_groups=False,
+        )
+        market_proxy = (1 + equal_market_return.fillna(0)).cumprod()
+        market_ma20 = market_proxy.rolling(20).mean()
+        market_ma60 = market_proxy.rolling(60).mean()
+        breadth = (df["close"] > df["ma20"]).groupby(df["date"]).mean()
+        market_score = (
+            (market_proxy > market_ma20).astype(int) * 5
+            + (market_ma20 > market_ma20.shift(5)).astype(int) * 5
+            + (market_proxy > market_ma60).astype(int) * 5
+            + (breadth >= 0.55).astype(int) * 5
+        )
+        market_strong = df["date"].map((market_score >= 15).to_dict())
+        entry_flags = ComprehensiveTrendStrategy.entry_flags(
+            comprehensive,
+            market_strong.set_axis(comprehensive.index),
+        )
+        df["sig_trend"] = entry_flags.any(axis=1) & (comprehensive["rsi"] >= 45)
         quality = df.get("roe", pd.Series(np.nan, index=df.index)).fillna(0) >= 0
         profit = df.get("net_profit_yoy", pd.Series(np.nan, index=df.index)).fillna(-100) >= -50
         liquid = groups["turnover"].transform(lambda item: item.rolling(20).mean()) >= 80_000_000
@@ -240,6 +336,10 @@ class EventDrivenBacktester:
         )
         df["next_date"] = groups["date"].shift(-1)
         df["next_open"] = groups["open"].shift(-1)
+        df["next_raw_open"] = groups["raw_open"].shift(-1)
+        df["next_is_st"] = groups["is_st"].shift(-1)
+        df["next_is_suspended"] = groups["is_suspended"].shift(-1)
+        df["next_can_buy"] = groups["can_buy"].shift(-1)
         df["next_high"] = groups["high"].shift(-1)
         df["next_low"] = groups["low"].shift(-1)
         return df
@@ -283,11 +383,16 @@ class EventDrivenBacktester:
                 if symbol not in positions or symbol not in day.index:
                     continue
                 bar = day.loc[symbol]
-                previous_close_value = float(bar["prev_close"] or 0)
-                if previous_close_value > 0 and float(bar["open"]) <= previous_close_value * 0.905:
+                previous_close_value = float(bar.get("prev_raw_close", bar["prev_close"]) or 0)
+                open_price = float(bar["raw_open"])
+                if bool(bar.get("is_suspended", False)) or not bool(bar.get("can_sell", True)):
+                    continue
+                if previous_close_value > 0 and cannot_sell_at_open(
+                    symbol, previous_close_value, open_price, is_st=bool(bar.get("is_st", False))
+                ):
                     continue
                 position = positions[symbol]
-                gross = position["shares"] * float(bar["open"]) * (1 - cfg.slippage_rate)
+                gross = position["shares"] * open_price * (1 - cfg.slippage_rate)
                 fee = max(cfg.minimum_commission, gross * cfg.commission_rate)
                 fee += gross * cfg.stamp_duty_rate
                 cash += gross - fee
@@ -318,9 +423,13 @@ class EventDrivenBacktester:
                         continue
                     if len(positions) >= cfg.max_positions:
                         break
-                    open_price = float(signal["next_open"])
-                    previous_close_value = float(signal["close"])
-                    if open_price <= 0 or open_price >= previous_close_value * 1.095:
+                    open_price = float(signal.get("next_raw_open", signal["next_open"]))
+                    previous_close_value = float(signal.get("raw_close", signal["close"]))
+                    if bool(signal.get("next_is_suspended", False)) or not bool(signal.get("next_can_buy", True)):
+                        continue
+                    if open_price <= 0 or cannot_buy_at_open(
+                        symbol, previous_close_value, open_price, is_st=bool(signal.get("next_is_st", False))
+                    ):
                         continue
                     execution_price = open_price * (1 + cfg.slippage_rate)
                     atr = float(signal["atr"] or 0)
@@ -448,6 +557,12 @@ class EventDrivenBacktester:
         downside = float(returns.clip(upper=0).std(ddof=0) * np.sqrt(252))
         exits = trades[trades["action"] == "卖出"] if not trades.empty else pd.DataFrame()
         wins = exits["realized_pnl"] > 0 if not exits.empty else pd.Series(dtype=bool)
+        gross_profit = float(exits.loc[exits["realized_pnl"] > 0, "realized_pnl"].sum()) if not exits.empty else 0.0
+        gross_loss = abs(float(exits.loc[exits["realized_pnl"] < 0, "realized_pnl"].sum())) if not exits.empty else 0.0
+        total_fees = float(trades["fee"].sum()) if not trades.empty else 0.0
+        traded_amount = (
+            float((trades["shares"] * trades["price"]).sum()) if not trades.empty else 0.0
+        )
         return {
             "total_return": total_return,
             "annual_return": float(annual_return),
@@ -462,6 +577,12 @@ class EventDrivenBacktester:
             "closed_trades": float(len(exits)),
             "win_rate": float(wins.mean()) if len(wins) else 0.0,
             "net_profit": float(exits["realized_pnl"].sum()) if not exits.empty else 0.0,
+            "profit_factor": gross_profit / gross_loss if gross_loss > 0 else 0.0,
+            "average_trade_pnl": float(exits["realized_pnl"].mean()) if not exits.empty else 0.0,
+            "average_holding_days": float(exits["holding_days"].mean()) if not exits.empty else 0.0,
+            "total_fees": total_fees,
+            "turnover_ratio": traded_amount / float(nav["total_assets"].mean()) if len(nav) else 0.0,
+            "average_exposure": float((nav["market_value"] / nav["total_assets"].replace(0, np.nan)).mean()),
         }
 
     @staticmethod

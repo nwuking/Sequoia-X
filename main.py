@@ -546,12 +546,23 @@ def main() -> None:
                 )
                 continue
             stock_names = engine.get_stock_names(selected) if selected else {}
+            assessments = None
+            if strategy is comprehensive_strategy:
+                assessment_by_symbol = {
+                    item.symbol: item for item in comprehensive_strategy.last_assessments
+                }
+                assessments = {
+                    symbol: assessment_by_symbol[symbol]
+                    for symbol in selected
+                    if symbol in assessment_by_symbol
+                }
             notifier.send(
                 symbols=selected,
                 strategy_name=strategy_name,
                 webhook_key=strategy.webhook_key,
                 data_date=data_date,
                 stock_names=stock_names,
+                assessments=assessments,
             )
             if not selected:
                 logger.info(f"{strategy_name} 无选股结果，已推送空结果状态")

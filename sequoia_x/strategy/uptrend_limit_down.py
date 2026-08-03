@@ -3,6 +3,7 @@
 import pandas as pd
 
 from sequoia_x.core.logger import get_logger
+from sequoia_x.core.market_rules import daily_price_limits
 from sequoia_x.strategy.base import BaseStrategy
 
 logger = get_logger(__name__)
@@ -56,9 +57,10 @@ class UptrendLimitDownStrategy(BaseStrategy):
                 # 条件 1：上升趋势（昨日均线多头排列）
                 uptrend = prev["ma20"] > prev["ma60"]
                 # 条件 2：放量跌停
-                limit_down = today["close"] <= prev["close"] * cfg.number(
-                    "uptrend_limit_down", "limit_down_ratio"
-                )
+                previous_close = float(prev.get("raw_close", prev["close"]))
+                today_close = float(today.get("raw_close", today["close"]))
+                limits = daily_price_limits(symbol, previous_close)
+                limit_down = limits.lower is not None and today_close <= limits.lower
                 volume_surge = today["volume"] > today["vol_ma20"] * cfg.number(
                     "uptrend_limit_down", "volume_ratio"
                 )

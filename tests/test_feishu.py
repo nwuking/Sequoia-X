@@ -122,6 +122,28 @@ def test_notification_uses_local_chinese_stock_name() -> None:
     assert "https://xueqiu.com/S/SH600519" in card_text
 
 
+def test_comprehensive_notification_includes_regime() -> None:
+    """综合趋势独立卡片应展示趋势状态、买点和退出状态。"""
+    notifier = FeishuNotifier(make_settings())
+    assessment = SimpleNamespace(
+        regime="主升浪",
+        entry_signal="A-平台放量突破",
+        exit_signal="趋势持有/观察",
+    )
+    with patch("requests.post") as mock_post:
+        mock_post.return_value = MagicMock(status_code=200)
+        notifier.send(
+            symbols=["000001"],
+            strategy_name="ComprehensiveTrendStrategy",
+            assessments={"000001": assessment},
+        )
+
+    body = json.loads(mock_post.call_args.kwargs["data"])
+    card_text = json.dumps(body, ensure_ascii=False)
+    assert "趋势状态（regime）：主升浪" in card_text
+    assert "买点：A-平台放量突破" in card_text
+
+
 def test_prediction_notification_contains_probability_and_metrics() -> None:
     """预测卡片应包含中文名、概率、方向和时间外验证指标。"""
     settings = Settings(
@@ -343,6 +365,7 @@ def test_combined_selection_includes_details_and_splits_by_length() -> None:
     assert "策略组" in all_text
     assert "低价多因子" in all_text
     assert "风险通过" in all_text
+    assert "趋势状态（regime）" in all_text
     assert "平安银行" in all_text
     assert "连续入选 3 次" in all_text
 

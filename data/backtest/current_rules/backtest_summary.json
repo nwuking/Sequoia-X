@@ -1,0 +1,40 @@
+{
+  "metrics": {
+    "total_return": -0.19503327377072577,
+    "annual_return": -0.18705577486191038,
+    "annual_volatility": 0.20007850047430056,
+    "sharpe": -0.9349119191641337,
+    "sortino": -1.5022810603228267,
+    "max_drawdown": -0.3564876117050668,
+    "calmar": -0.5247188646113946,
+    "benchmark_return": 0.090251146671944,
+    "closed_trades": 371.0,
+    "win_rate": 0.4123989218328841,
+    "net_profit": -221133.93151107282,
+    "profit_factor": 0.8236946961788586,
+    "average_trade_pnl": -596.0483329139429,
+    "average_holding_days": 6.398921832884097,
+    "total_fees": 28744.02573535908,
+    "turnover_ratio": 48.86287023192209,
+    "average_exposure": 0.6336024853750205
+  },
+  "start_date": "2025-07-01",
+  "end_date": "2026-07-30",
+  "config": {
+    "initial_capital": 1000000,
+    "max_positions": 10,
+    "max_position_ratio": 0.1,
+    "max_exposure_ratio": 0.8,
+    "risk_per_trade_ratio": 0.008,
+    "min_signal_count": 1,
+    "stop_loss_ratio": 0.08,
+    "trailing_start_profit": 0.08,
+    "trailing_drawdown": 0.06,
+    "max_holding_days": 15,
+    "slippage_rate": 0.001,
+    "commission_rate": 0.0003,
+    "minimum_commission": 5.0,
+    "stamp_duty_rate": 0.0005,
+    "lot_size": 100
+  }
+}
