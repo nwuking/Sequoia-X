@@ -1,0 +1,13 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "7a385d22ca985dc0e0bf0117ef5fd5ac96388efa",
+  "prompts": {},
+  "logical_commit_id": "7a385d22ca985dc0e0bf0117ef5fd5ac96388efa",
+  "humans": {
+    "h_dc6c9c0bce9380": {
+      "author": "yeyongjun <yeyongjun@bigo.sg>"
+    }
+  }
+}
