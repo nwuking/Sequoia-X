@@ -39,6 +39,11 @@ _CREATE_INDEX_SQL = """
 CREATE INDEX IF NOT EXISTS idx_symbol_date ON stock_daily (symbol, date);
 """
 
+_CREATE_UNIQUE_INDEX_SQL = """
+CREATE UNIQUE INDEX IF NOT EXISTS uq_stock_daily_symbol_date
+ON stock_daily (symbol, date);
+"""
+
 _CREATE_STOCK_BASIC_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS stock_basic (
     symbol     TEXT PRIMARY KEY,
@@ -117,23 +122,47 @@ class DataEngine:
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(_CREATE_TABLE_SQL)
-            conn.execute(_CREATE_INDEX_SQL)
             conn.execute(_CREATE_STOCK_BASIC_TABLE_SQL)
             conn.execute(_CREATE_STOCK_STATUS_TABLE_SQL)
             conn.execute(_CREATE_FINANCIAL_FACTORS_TABLE_SQL)
-            conn.execute(_CREATE_FINANCIAL_FACTORS_INDEX_SQL)
             conn.execute(_CREATE_API_USAGE_TABLE_SQL)
             self._migrate_schema(conn)
+            conn.execute(_CREATE_INDEX_SQL)
+            conn.execute(_CREATE_UNIQUE_INDEX_SQL)
+            conn.execute(_CREATE_FINANCIAL_FACTORS_INDEX_SQL)
             conn.commit()
         logger.info(f"数据库初始化完成：{self.db_path}")
 
     @staticmethod
     def _migrate_schema(conn: sqlite3.Connection) -> None:
-        """为旧数据库补充真实成交价和历史状态字段。"""
+        """补齐旧库字段和约束，使首次/中断后拉取都使用同一结构。"""
         daily_columns = {row[1] for row in conn.execute("PRAGMA table_info(stock_daily)")}
-        for column in ("raw_open", "raw_high", "raw_low", "raw_close"):
+        if not {"symbol", "date"}.issubset(daily_columns):
+            raise RuntimeError(
+                "stock_daily 表缺少 symbol/date 核心字段；请检查 DB_PATH 是否指向了错误的 SQLite 文件"
+            )
+        daily_definitions = {
+            "open": "REAL",
+            "high": "REAL",
+            "low": "REAL",
+            "close": "REAL",
+            "raw_open": "REAL",
+            "raw_high": "REAL",
+            "raw_low": "REAL",
+            "raw_close": "REAL",
+            "volume": "REAL",
+            "turnover": "REAL",
+        }
+        for column, definition in daily_definitions.items():
             if column not in daily_columns:
-                conn.execute(f"ALTER TABLE stock_daily ADD COLUMN {column} REAL")
+                conn.execute(f"ALTER TABLE stock_daily ADD COLUMN {column} {definition}")
+
+        # 旧版本或中断的 pandas 建表可能没有 (symbol, date) 唯一约束。
+        # 先保留每组最早的一条，再由初始化流程创建唯一索引。
+        conn.execute(
+            "DELETE FROM stock_daily WHERE rowid NOT IN ("
+            "SELECT MIN(rowid) FROM stock_daily GROUP BY symbol, date)"
+        )
         basic_columns = {row[1] for row in conn.execute("PRAGMA table_info(stock_basic)")}
         for column in ("listing_date", "delisting_date", "board"):
             if column not in basic_columns:

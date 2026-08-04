@@ -119,6 +119,45 @@ def test_get_latest_date() -> None:
         assert engine.get_latest_date() == "2026-07-27"
 
 
+def test_init_db_repairs_incomplete_stock_daily_schema() -> None:
+    """旧版本或中断创建的残缺行情表应在首次拉取前自动修复。"""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        db_path = str(Path(tmp_dir) / "test.db")
+        with sqlite3.connect(db_path) as conn:
+            conn.execute(
+                "CREATE TABLE stock_daily (symbol TEXT NOT NULL, date TEXT NOT NULL, close REAL)"
+            )
+            conn.executemany(
+                "INSERT INTO stock_daily (symbol, date, close) VALUES (?, ?, ?)",
+                [("000001", "2026-08-03", 10.0), ("000001", "2026-08-03", 10.1)],
+            )
+
+        settings = Settings(
+            db_path=db_path,
+            start_date="2024-01-01",
+            feishu_webhook_url="https://example.com/hook",
+        )
+        DataEngine(settings)
+
+        with sqlite3.connect(db_path) as conn:
+            columns = {row[1] for row in conn.execute("PRAGMA table_info(stock_daily)")}
+            duplicate_count = conn.execute(
+                "SELECT COUNT(*) FROM stock_daily WHERE symbol = ? AND date = ?",
+                ("000001", "2026-08-03"),
+            ).fetchone()[0]
+            with pytest.raises(sqlite3.IntegrityError):
+                conn.execute(
+                    "INSERT INTO stock_daily (symbol, date, close) VALUES (?, ?, ?)",
+                    ("000001", "2026-08-03", 11.0),
+                )
+
+        assert {
+            "symbol", "date", "open", "high", "low", "close", "raw_open",
+            "raw_high", "raw_low", "raw_close", "volume", "turnover",
+        }.issubset(columns)
+        assert duplicate_count == 1
+
+
 def test_get_stock_names_from_local_database() -> None:
     """股票中文名应直接从本地基础信息表读取。"""
     with tempfile.TemporaryDirectory() as tmp_dir:
