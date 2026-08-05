@@ -177,6 +177,31 @@ def test_get_stock_names_from_local_database() -> None:
         }
 
 
+def test_write_daily_status_converts_pandas_na_to_sql_null() -> None:
+    """尚未计算的涨跌停字段应以 SQL NULL 写入，而不是把 pandas.NA 交给 sqlite。"""
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        engine, _ = make_engine_in(tmp_dir)
+        frame = pd.DataFrame(
+            [{
+                "symbol": "600519",
+                "date": "2026-08-04",
+                "tradestatus": "1",
+                "isST": "0",
+            }]
+        )
+
+        engine._write_daily_status(frame)
+
+        with sqlite3.connect(engine.db_path) as conn:
+            row = conn.execute(
+                "SELECT limit_ratio, limit_up, limit_down "
+                "FROM stock_status_daily WHERE symbol = ? AND date = ?",
+                ("600519", "2026-08-04"),
+            ).fetchone()
+
+        assert row == (None, None, None)
+
+
 def test_baostock_daily_quota_blocks_new_requests() -> None:
     """当日本地计数达到阈值时，应阻止新的 baostock 请求。"""
     with tempfile.TemporaryDirectory() as tmp_dir:

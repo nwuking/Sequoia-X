@@ -290,9 +290,13 @@ class DataEngine:
         status["limit_ratio"] = pd.NA
         status["limit_up"] = pd.NA
         status["limit_down"] = pd.NA
-        records = status[
-            ["symbol", "date", "name", "board", "is_st", "is_suspended", "can_buy", "can_sell", "limit_ratio", "limit_up", "limit_down"]
-        ].itertuples(index=False, name=None)
+        columns = [
+            "symbol", "date", "name", "board", "is_st", "is_suspended",
+            "can_buy", "can_sell", "limit_ratio", "limit_up", "limit_down",
+        ]
+        # sqlite3 无法绑定 pandas.NA；写入前统一转换为 SQL NULL。
+        db_status = status[columns].astype(object).where(status[columns].notna(), None)
+        records = db_status.itertuples(index=False, name=None)
         with sqlite3.connect(self.db_path) as conn:
             conn.executemany(
                 "INSERT INTO stock_status_daily "
