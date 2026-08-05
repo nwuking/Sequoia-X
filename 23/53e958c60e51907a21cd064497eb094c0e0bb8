@@ -1,0 +1,29 @@
+tests/test_data_engine.py
+  s_c233054ad8b19b::t_ceb7d814a41d09 180-204
+sequoia_x/data/engine.py
+  s_c233054ad8b19b::t_ceb7d814a41d09 293-299
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "2353e958c60e51907a21cd064497eb094c0e0bb8",
+  "prompts": {},
+  "logical_commit_id": "2353e958c60e51907a21cd064497eb094c0e0bb8",
+  "humans": {
+    "h_dc6c9c0bce9380": {
+      "author": "yeyongjun <yeyongjun@bigo.sg>"
+    }
+  },
+  "sessions": {
+    "s_c233054ad8b19b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fd175-aa99-7093-8318-eb1f76ba9b24",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "yeyongjun <yeyongjun@bigo.sg>",
+      "total_additions": 32,
+      "total_deletions": 3
+    }
+  }
+}
