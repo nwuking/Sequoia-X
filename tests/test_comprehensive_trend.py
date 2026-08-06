@@ -1,7 +1,12 @@
 """综合趋势策略测试。"""
 
+import json
+from pathlib import Path
+from unittest.mock import MagicMock
+
 import pandas as pd
 
+from sequoia_x.core.config import Settings
 from sequoia_x.strategy.comprehensive_trend import ComprehensiveTrendStrategy
 
 
@@ -66,3 +71,29 @@ def test_assess_labels_clear_downtrend() -> None:
     assert result.regime in {"阴跌趋势", "下跌反弹"}
     assert result.entry_signal == "等待确认"
     assert result.score < 45
+
+
+def test_empty_data_invalidates_old_snapshot(tmp_path: Path) -> None:
+    snapshot = tmp_path / "snapshot.json"
+    snapshot.write_text(
+        json.dumps({"data_date": "old", "assessments": [{"symbol": "600519"}]}),
+        encoding="utf-8",
+    )
+    settings = Settings(
+        db_path=str(tmp_path / "empty.db"),
+        comprehensive_snapshot_path=str(snapshot),
+        feishu_webhook_url="https://example.com/hook",
+    )
+    engine = MagicMock()
+    engine.thresholds.integer.side_effect = lambda section, key: 120 if key == "min_history" else 300
+    engine.get_local_symbols.return_value = []
+    engine.get_stock_names.return_value = {}
+    engine.get_latest_date.return_value = None
+
+    result = ComprehensiveTrendStrategy(engine, settings).run()
+    payload = json.loads(snapshot.read_text(encoding="utf-8"))
+
+    assert result == []
+    assert payload["valid"] is False
+    assert payload["data_date"] is None
+    assert payload["assessments"] == []

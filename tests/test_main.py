@@ -94,6 +94,23 @@ def test_force_continues_after_sync_failure() -> None:
     assert "使用本地数据" in logger.warning.call_args.args[0]
 
 
+def test_empty_database_is_not_reported_as_successful_sync() -> None:
+    engine = MagicMock()
+    engine.sync_today_bulk.return_value = 0
+    engine.get_latest_date.return_value = None
+    notifier = MagicMock()
+
+    result = main_module._sync_latest(engine, force=False, logger=MagicMock(), notifier=notifier)
+
+    assert result is False
+    notifier.set_local_data_fallback.assert_called_once_with(True)
+    notifier.send_system_alert.assert_called_once_with(
+        title="本地行情数据库为空",
+        message="本地行情数据库为空，增量同步无法建立股票池；请先执行 --backfill",
+        data_date=None,
+    )
+
+
 # Feature: sequoia-x-v2, Property 13: 主程序异常以非零退出码终止
 @given(error_msg=st.text(min_size=1, max_size=100))
 @h_settings(max_examples=30, deadline=None)

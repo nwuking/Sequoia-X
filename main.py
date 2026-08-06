@@ -154,6 +154,18 @@ def _sync_latest(engine: DataEngine, force: bool, logger, notifier=None) -> bool
                 data_date=engine.get_latest_date(),
             )
         return False
+    latest_date = engine.get_latest_date()
+    if not latest_date:
+        message = "本地行情数据库为空，增量同步无法建立股票池；请先执行 --backfill"
+        logger.error(message)
+        if notifier is not None:
+            notifier.set_local_data_fallback(True)
+            notifier.send_system_alert(
+                title="本地行情数据库为空",
+                message=message,
+                data_date=None,
+            )
+        return False
     if notifier is not None:
         notifier.set_local_data_fallback(False)
     logger.info(f"快照同步完成，写入 {count} 只股票")
@@ -486,7 +498,13 @@ def main() -> None:
             # ── 回填模式：单线程保守拉历史 K 线，自动多轮重跑 ──
             logger.info("进入回填模式...")
             all_symbols = engine.get_all_symbols()
-            engine.backfill(all_symbols, full_history=args.full_history)
+            if not all_symbols:
+                raise RuntimeError("未获取到任何股票代码，无法执行历史回填")
+            result = engine.backfill(all_symbols, full_history=args.full_history)
+            if result["success"] + result["skipped"] == 0:
+                raise RuntimeError(
+                    f"历史回填未写入任何股票数据，失败 {result['failed']} 只"
+                )
             logger.info("Sequoia-X V2 回填模式运行完成")
             return
 
@@ -535,6 +553,8 @@ def main() -> None:
 
         # ── 先同步最新日K；失败则告警并自动降级到本地数据 ──
         _sync_latest(engine, force=args.force, logger=logger, notifier=notifier)
+        if engine.get_latest_date() is None:
+            raise RuntimeError("本地行情数据库为空，已停止策略、组合和推送流程；请先执行 --backfill")
 
         # ── 最新日K入库后再生成持仓、低价多因子候选与操作观察 ──
         _run_portfolio(engine, settings)

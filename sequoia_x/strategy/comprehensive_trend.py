@@ -430,6 +430,12 @@ class ComprehensiveTrendStrategy(BaseStrategy):
                 logger.warning(f"[{symbol}] 综合趋势行情读取失败：{exc}")
         if not frames:
             self.last_assessments = []
+            self._save_snapshot(
+                [],
+                {"score": 0.0, "ret20": 0.0, "strong": False, "breadth": 0.0},
+                valid=False,
+                reason="本地没有足够的行情数据，综合趋势快照已失效",
+            )
             return []
 
         market = self._market_context(frames, thresholds=cfg)
@@ -473,6 +479,8 @@ class ComprehensiveTrendStrategy(BaseStrategy):
         self,
         assessments: list[TrendAssessment],
         market: dict[str, float | bool],
+        valid: bool = True,
+        reason: str | None = None,
     ) -> None:
         """保存收盘决策层结果，供盘中监控读取；不会写入或修改日K表。"""
         path = Path(self.settings.comprehensive_snapshot_path)
@@ -480,6 +488,8 @@ class ComprehensiveTrendStrategy(BaseStrategy):
         payload = {
             "generated_at": datetime.now().isoformat(timespec="seconds"),
             "data_date": self.engine.get_latest_date(),
+            "valid": valid,
+            "reason": reason,
             "market": market,
             "assessments": [asdict(item) for item in assessments],
         }

@@ -92,7 +92,11 @@ class PortfolioManager:
         if not self.csv_path.exists():
             df = pd.DataFrame(columns=self.columns)
         else:
-            df = pd.read_csv(self.csv_path, dtype={"symbol": str})
+            try:
+                df = pd.read_csv(self.csv_path, dtype={"symbol": str})
+            except (pd.errors.EmptyDataError, pd.errors.ParserError, OSError):
+                logger.warning(f"组合文件为空或损坏，按空组合恢复：{self.csv_path}")
+                df = pd.DataFrame(columns=self.columns)
         for column in self.columns:
             if column not in df.columns:
                 df[column] = pd.NA

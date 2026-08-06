@@ -81,6 +81,30 @@ def test_sync_today_bulk_stops_when_baostock_login_fails() -> None:
     fake_bs.query_history_k_data_plus.assert_not_called()
 
 
+def test_get_all_symbols_raises_when_query_fails() -> None:
+    fake_result = SimpleNamespace(error_code="1", error_msg="blocked", next=MagicMock())
+    fake_bs = SimpleNamespace(
+        login=MagicMock(return_value=SimpleNamespace(error_code="0", error_msg="")),
+        query_stock_basic=MagicMock(return_value=fake_result),
+        logout=MagicMock(),
+    )
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        engine, _ = make_engine_in(tmp_dir)
+        with patch.dict(sys.modules, {"baostock": fake_bs}):
+            with pytest.raises(RuntimeError, match="股票列表查询失败"):
+                engine.get_all_symbols()
+
+
+def test_backfill_rejects_empty_symbol_list() -> None:
+    fake_bs = SimpleNamespace(login=MagicMock(), logout=MagicMock())
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        engine, _ = make_engine_in(tmp_dir)
+        with patch.dict(sys.modules, {"baostock": fake_bs}):
+            with pytest.raises(RuntimeError, match="股票列表为空"):
+                engine.backfill([])
+    fake_bs.login.assert_not_called()
+
+
 def test_sync_aborts_when_any_symbol_query_fails() -> None:
     """任一股票拉取失败时应停止策略前的数据同步。"""
     with tempfile.TemporaryDirectory() as tmp_dir:

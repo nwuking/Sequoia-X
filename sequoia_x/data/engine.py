@@ -694,7 +694,7 @@ class DataEngine:
         return count
 
     @serialized_baostock
-    def backfill(self, symbols: list[str], full_history: bool = False) -> None:
+    def backfill(self, symbols: list[str], full_history: bool = False) -> dict[str, int]:
         """通过 baostock 批量回填历史日 K 线数据（后复权）。
 
         容错机制：
@@ -719,8 +719,10 @@ class DataEngine:
                 return False
             return True
 
+        if not symbols:
+            raise RuntimeError("历史回填股票列表为空")
         if not _login():
-            return
+            raise RuntimeError("baostock 登录失败，历史回填未开始")
 
         success = 0
         skipped = 0
@@ -745,8 +747,7 @@ class DataEngine:
                     bs.logout()
                     time.sleep(1)
                     if not _login():
-                        logger.error("重连失败，终止回填")
-                        return
+                        raise RuntimeError("baostock 重连失败，历史回填被中止")
                     since_reconnect = 0
 
                 start = self.start_date if full_history else (last_date or self.start_date)
@@ -859,6 +860,7 @@ class DataEngine:
             bs.logout()
 
         logger.info(f"回填完成 — 成功: {success} | 跳过: {skipped} | 失败: {failed}")
+        return {"success": success, "skipped": skipped, "failed": failed}
 
     # ── 股票列表 ──
 
@@ -871,11 +873,12 @@ class DataEngine:
 
         lg = bs.login()
         if lg.error_code != "0":
-            logger.error(f"baostock 登录失败: {lg.error_msg}")
-            return []
+            raise RuntimeError(f"baostock 登录失败: {lg.error_msg}")
 
         try:
             rs = bs.query_stock_basic(code_name="", code="")
+            if rs.error_code != "0":
+                raise RuntimeError(f"baostock 股票列表查询失败: {rs.error_msg}")
             symbols = []
             stock_basics = []
             while rs.next():
@@ -905,11 +908,13 @@ class DataEngine:
                     stock_basics,
                 )
                 conn.commit()
+            if not symbols:
+                raise RuntimeError("baostock 股票列表查询成功但未返回任何上市股票")
             logger.info(f"获取股票列表完成，共 {len(symbols)} 只")
             return symbols
         except Exception as e:
             logger.error(f"获取股票列表失败: {e}")
-            return []
+            raise
         finally:
             bs.logout()
 

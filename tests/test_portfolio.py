@@ -183,3 +183,15 @@ def test_portfolio_replacements_mark_top_three_candidates() -> None:
     assert len(report.replacements) == 2
     assert report.replacements[0].buy_symbol == "000001"
     assert report.candidates[0].close == 21.5
+
+
+def test_zero_byte_portfolio_file_is_treated_as_empty(tmp_path) -> None:
+    settings = build_settings(str(tmp_path))
+    engine = DataEngine(settings)
+    Path(settings.portfolio_csv_path).parent.mkdir(parents=True, exist_ok=True)
+    Path(settings.portfolio_csv_path).write_bytes(b"")
+
+    frame = PortfolioManager(engine, settings.portfolio_csv_path).load()
+
+    assert frame.empty
+    assert list(frame.columns) == PortfolioManager.columns

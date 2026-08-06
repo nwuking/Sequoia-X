@@ -107,13 +107,23 @@ class IntradayMonitor:
         path = Path(self.settings.comprehensive_snapshot_path)
         if not path.exists():
             raise RuntimeError("缺少综合趋势快照，请先在收盘后运行一次日常策略")
-        return json.loads(path.read_text(encoding="utf-8"))
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as exc:
+            raise RuntimeError(f"综合趋势快照损坏，需重新运行日常策略：{exc}") from exc
+        if payload.get("valid") is False:
+            raise RuntimeError(payload.get("reason") or "综合趋势快照已失效")
+        return payload
 
     def _load_portfolio(self) -> pd.DataFrame:
         path = Path(self.settings.portfolio_csv_path)
         if not path.exists():
             return pd.DataFrame()
-        return pd.read_csv(path, dtype={"symbol": str})
+        try:
+            return pd.read_csv(path, dtype={"symbol": str})
+        except (pd.errors.EmptyDataError, pd.errors.ParserError, OSError):
+            logger.warning("组合文件为空或损坏，本次按空组合处理")
+            return pd.DataFrame()
 
     def _load_strategy_sources(
         self,

@@ -5,6 +5,7 @@ import tempfile
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from sequoia_x.core.config import Settings
 from sequoia_x.data.engine import DataEngine
@@ -135,3 +136,40 @@ def test_elapsed_volume_ratio_covers_lunch_and_close() -> None:
     assert IntradayMonitor._elapsed_volume_ratio(datetime(2026, 7, 30, 11, 30)) == 0.5
     assert IntradayMonitor._elapsed_volume_ratio(datetime(2026, 7, 30, 12, 0)) == 0.5
     assert IntradayMonitor._elapsed_volume_ratio(datetime(2026, 7, 30, 15, 0)) == 1.0
+
+
+def test_intraday_rejects_invalid_snapshot(tmp_path: Path) -> None:
+    settings = Settings(
+        db_path=str(tmp_path / "test.db"),
+        comprehensive_snapshot_path=str(tmp_path / "snapshot.json"),
+        portfolio_csv_path=str(tmp_path / "portfolio.csv"),
+        intraday_alert_state_path=str(tmp_path / "alerts.json"),
+        feishu_webhook_url="https://example.com/hook",
+    )
+    engine = DataEngine(settings)
+    Path(settings.comprehensive_snapshot_path).write_text(
+        json.dumps({"valid": False, "reason": "行情为空", "assessments": []}),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(RuntimeError, match="行情为空"):
+        IntradayMonitor(engine, settings, quote_fetcher=lambda _: None).run()
+
+
+def test_intraday_treats_zero_byte_portfolio_as_empty(tmp_path: Path) -> None:
+    settings = Settings(
+        db_path=str(tmp_path / "test.db"),
+        comprehensive_snapshot_path=str(tmp_path / "snapshot.json"),
+        portfolio_csv_path=str(tmp_path / "portfolio.csv"),
+        intraday_alert_state_path=str(tmp_path / "alerts.json"),
+        feishu_webhook_url="https://example.com/hook",
+    )
+    engine = DataEngine(settings)
+    Path(settings.comprehensive_snapshot_path).write_text(
+        json.dumps({"valid": True, "assessments": []}), encoding="utf-8"
+    )
+    Path(settings.portfolio_csv_path).write_bytes(b"")
+
+    alerts = IntradayMonitor(engine, settings, quote_fetcher=lambda _: None).run()
+
+    assert alerts == []

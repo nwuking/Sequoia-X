@@ -1,6 +1,7 @@
 """低价多因子策略测试。"""
 
 import tempfile
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -128,3 +129,34 @@ def test_low_price_multi_factor_uses_financial_scores_when_available(monkeypatch
         result = strategy.run()
 
     assert result[0] == "000001"
+
+
+def test_monthly_state_is_discarded_when_its_symbol_has_no_current_data(monkeypatch) -> None:
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        root = Path(tmp_dir)
+        state_path = root / "rebalance.json"
+        settings = Settings(
+            db_path=str(root / "test.db"),
+            low_price_rebalance_state_path=str(state_path),
+            feishu_webhook_url="https://example.com/hook",
+        )
+        engine = DataEngine(settings)
+        strategy = LowPriceMultiFactorStrategy(engine=engine, settings=settings)
+        state_path.write_text(
+            json.dumps(
+                {"month": "2026-08", "data_date": "2026-08-05", "symbols": ["600519"]}
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(engine, "get_latest_date", lambda: "2026-08-06")
+        monkeypatch.setattr(engine, "get_local_symbols", lambda: ["600519"])
+        monkeypatch.setattr(engine, "get_stock_names", lambda _: {"600519": "贵州茅台"})
+        monkeypatch.setattr(engine, "get_ohlcv", lambda _: pd.DataFrame())
+        monkeypatch.setattr(strategy, "rank_candidates", lambda limit: pd.DataFrame())
+
+        result = strategy.run()
+        saved = json.loads(state_path.read_text(encoding="utf-8"))
+
+    assert result == []
+    assert saved["data_date"] == "2026-08-06"
+    assert saved["symbols"] == []

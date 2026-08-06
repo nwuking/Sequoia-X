@@ -131,9 +131,21 @@ class LowPriceMultiFactorStrategy(BaseStrategy):
             except (OSError, ValueError):
                 previous = {}
         if previous.get("month") == month:
-            symbols = [str(item) for item in previous.get("symbols", [])]
-            logger.info(f"LowPriceMultiFactorStrategy 沿用 {month} 月度组合 {len(symbols)} 只")
-            return symbols
+            symbols = [str(item).zfill(6) for item in previous.get("symbols", [])]
+            local_symbols = set(self.get_eligible_symbols())
+            state_is_usable = previous.get("data_date") is not None
+            for symbol in symbols:
+                if symbol not in local_symbols:
+                    state_is_usable = False
+                    break
+                history = self.engine.get_ohlcv(symbol)
+                if history.empty or str(history.iloc[-1]["date"]) != str(latest_date):
+                    state_is_usable = False
+                    break
+            if state_is_usable:
+                logger.info(f"LowPriceMultiFactorStrategy 沿用 {month} 月度组合 {len(symbols)} 只")
+                return symbols
+            logger.warning("低价多因子月度状态与当前行情不一致，重新生成本月组合")
         symbols = selected["symbol"].tolist() if not selected.empty else []
         state_path.parent.mkdir(parents=True, exist_ok=True)
         temporary = state_path.with_suffix(state_path.suffix + ".tmp")
