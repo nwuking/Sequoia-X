@@ -26,6 +26,7 @@ from rich.table import Table
 
 from sequoia_x.core.config import get_settings
 from sequoia_x.core.logger import configure_file_logging, get_logger
+from sequoia_x.core.state_cleanup import cleanup_strategy_state
 from sequoia_x.data.engine import DataEngine
 from sequoia_x.notify.feishu import FeishuNotifier
 from sequoia_x.monitor import IntradayMonitor
@@ -386,6 +387,12 @@ def main() -> None:
         action="store_true",
         help="同步全市场行业归属并标记行业量化龙头，写入 stock_industry.csv",
     )
+    mode_group.add_argument(
+        "--cleanup-strategy-state",
+        "--cleanup",
+        action="store_true",
+        help="归档并重置策略快照、选股池、连续次数、月度组合、盘中去重和预测跟踪状态",
+    )
     parser.add_argument(
         "--industry-leaders",
         type=int,
@@ -475,6 +482,7 @@ def main() -> None:
             "独立预测" if args.predict else
             "财务同步" if args.sync_financials is not None else
             "行业同步" if args.sync_industries else
+            "策略状态清理" if args.cleanup_strategy_state else
             "滚动样本外验证" if args.backtest and args.walk_forward else
             "事件驱动回测" if args.backtest else
             "盘中监控" if args.intraday else
@@ -492,6 +500,17 @@ def main() -> None:
 
         if args.backtest:
             _run_backtest(engine, args)
+            return
+
+        if args.cleanup_strategy_state:
+            result = cleanup_strategy_state(engine, settings)
+            console = Console()
+            console.print(f"策略状态清理完成：重置 {len(result.reset_paths)} 项")
+            console.print(f"旧状态归档：{result.archive_dir}")
+            logger.info(
+                f"策略状态清理完成：重置 {len(result.reset_paths)} 项，"
+                f"旧状态归档到 {result.archive_dir}"
+            )
             return
 
         if args.backfill:

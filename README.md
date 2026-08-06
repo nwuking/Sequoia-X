@@ -31,7 +31,13 @@ Sequoia-X V2 是面向 A 股市场的量化选股系统，基于现代 Python �
 .venv/bin/python main.py --predict 600519 000001 --horizon 5  # 指定股票预测未来5个交易日
 .venv/bin/python main.py --portfolio    # 刷新持仓收益并推送下一工作日操作观察
 .venv/bin/python main.py --intraday     # 盘中监控持仓、自选和前一日综合趋势候选
+.venv/bin/python main.py --cleanup      # 归档并重置所有策略选股相关状态
 ```
+
+`--cleanup`（完整名称 `--cleanup-strategy-state`）会清理综合趋势快照、每日策略选股池、组合重点候选
+连续次数、低价多因子月度锁定、盘中预警去重状态和多周期预测跟踪状态。清理前的文件会自动复制到
+`data/state_archive/<时间戳>/`，随后写入结构完整的空状态；行情数据库、财务因子、行业数据、真实持仓
+和模拟交易账户不会被清理。清理后需要重新运行一次日常策略，才能再次执行盘中监控。
 
 baostock 登录或增量同步失败时，程序会通过 `system_operations` Webhook 推送红色系统告警，标明异常原因和
 本地最新数据日期，然后自动使用本地数据继续执行持仓、全部策略和组合决策。未配置
