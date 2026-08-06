@@ -1,0 +1,35 @@
+sequoia_x/core/state_cleanup.py
+  s_2817438d2f7f98::t_d62f56aae0618e 41-45
+  s_2817438d2f7f98::t_5202be6d2e35e2 1-40,46-105
+README.md
+  s_2817438d2f7f98::t_5202be6d2e35e2 34,36-40
+main.py
+  s_2817438d2f7f98::t_5202be6d2e35e2 29,390-395,485,503-513
+tests/test_state_cleanup.py
+  s_2817438d2f7f98::t_5202be6d2e35e2 1-48,51-63
+  s_2817438d2f7f98::t_f9edfc3afb1991 49-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "12e9b553c87a7807086f5d8cddd0a5ca02554213",
+  "prompts": {},
+  "logical_commit_id": "12e9b553c87a7807086f5d8cddd0a5ca02554213",
+  "humans": {
+    "h_dc6c9c0bce9380": {
+      "author": "yeyongjun <yeyongjun@bigo.sg>"
+    }
+  },
+  "sessions": {
+    "s_2817438d2f7f98": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fd4f8-6345-7231-8edc-0f904d2ce347",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "yeyongjun <yeyongjun@bigo.sg>",
+      "total_additions": 194,
+      "total_deletions": 1
+    }
+  }
+}
